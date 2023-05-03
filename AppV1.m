@@ -77,7 +77,7 @@ classdef AppV1 < matlab.apps.AppBase
             C0 = cell2mat(app.UITable.Data(:,3));
             Vinj = app.InjectionVolume.Value;
 
-            Vcm = Vc*(1-Sf+Sf*KD(end))*1.5;
+            Vcm = F*app.ElutionDuration.Value;
             Vcup = Vc/Ncup;
             Vmcup = Vcup*(1-Sf);
             dtElution = Vmcup/F;
@@ -372,10 +372,10 @@ classdef AppV1 < matlab.apps.AppBase
             app.ExtrusionDurationLabelUnits.Text = 'min';
 
             % Create yield and purity table
-            app.yieldAndPurity = uitable(app.ElutionExtrusionTab);
-            app.yieldAndPurity.ColumnName = {'Column 1'; 'Column 2'; 'Column 3'; 'Column 4'};
-            app.yieldAndPurity.RowName = {};
-            app.yieldAndPurity.Position = [49 12 647 122];
+            %app.yieldAndPurity = uitable(app.ElutionExtrusionTab);
+            %app.yieldAndPurity.ColumnName = {'Column 1'; 'Column 2'; 'Column 3'; 'Column 4'};
+            %app.yieldAndPurity.RowName = {};
+            %app.yieldAndPurity.Position = [49 12 647 122];
 
             % Create MultipleDualModeTab
             app.MultipleDualModeTab = uitab(app.TabGroup);
