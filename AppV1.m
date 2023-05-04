@@ -41,15 +41,29 @@ classdef AppV1 < matlab.apps.AppBase
         ExportButtonExtrusion         matlab.ui.control.Button
         PlotButtonExtrusion           matlab.ui.control.Button
         UIAxesExtrusion               matlab.ui.control.UIAxes
+        dualModeTab                   matlab.ui.container.Tab
+        DualDurationLabelUnits        matlab.ui.control.Label
+        DualDuration                  matlab.ui.control.NumericEditField
+        DualDurationLabel             matlab.ui.control.Label
+        ExportButtonDual              matlab.ui.control.Button
+        PlotButtonDual                matlab.ui.control.Button
+        UIAxesDual                    matlab.ui.control.UIAxes
         MultipleDualModeTab           matlab.ui.container.Tab
-        CycleDurations                matlab.ui.control.EditField
-        CycleDurationsLabel           matlab.ui.control.Label
         ExportButtonMulti             matlab.ui.control.Button
         PlotButtonMulti               matlab.ui.control.Button
+        SwitchTimeListLabel           matlab.ui.control.Label
+        SwitchTimeList                matlab.ui.control.Table
+        removeCycle                   matlab.ui.control.Button
+        addCycle                      matlab.ui.control.Button
         UIAxesMultiPosition           matlab.ui.control.UIAxes
         UIAxesMulti                   matlab.ui.control.UIAxes
+        Info                          matlab.ui.container.Tab
+        InfoTitle                     matlab.ui.control.Label
+        InfoVersion                   matlab.ui.control.Label
+        InfoCitation                  matlab.ui.control.Label
+        InfoCredits                   matlab.ui.control.Label
     end
-
+    
     % Callbacks that handle component events
     methods (Access = private)
 
@@ -63,9 +77,22 @@ classdef AppV1 < matlab.apps.AppBase
 
 
         function removeCompoundButtonPushed(app)
-            if height(app.compoundList.Data) > 2
+            if height(app.compoundList.Data) > 1
             app.compoundList.Data(end,:) = []; % Delete Last Row
             end
+        end
+
+
+        function addCycleButtonPushed(app)
+            newRowPosition = height(app.SwitchTimeList.Data)+1;
+            newRowPositionString = num2str(newRowPosition);
+            cycleName = {char(append('Cycle',' ',newRowPositionString))};
+            app.SwitchTimeList.Data(end+1,:) = [cycleName,5];
+        end
+
+
+        function removeCycleButtonPushed(app)
+            app.SwitchTimeList.Data(end,:) = []; % Delete Last Row
         end
 
 
@@ -133,14 +160,18 @@ classdef AppV1 < matlab.apps.AppBase
             [Vspan Cout X Y] = CupV6(Sf, KD, Vc, Ncup, Vcm, C0, Vinj);
             Xcm = X;
             Ycm = Y;
-            [Vspan2, Cout, Xtot, Ytot] = EECCC_V7(KD, Vc, Sf, Xcm, Ycm);
+            [Vspan, Cout, Xtot, Ytot] = EECCC_V7(KD, Vc, Sf, Xcm, Ycm);
 
-            Nturn = Vspan2/Vmcup;
+            Nturn = Vspan/Vmcup;
             telute = (dtElution).*Nturn;
 
             extrusionTime = app.ExtrusionDuration.Value + elutionTime;
-
+            columnVolumeExtrudedTime = elutionTime+(Vc/F);
+            
             plot(app.UIAxesExtrusion, telute, Cout, 'linewidth', 2.0);
+            xline(app.UIAxesExtrusion, elutionTime, '-.r');
+            xline(app.UIAxesExtrusion, columnVolumeExtrudedTime, '-.r');
+
             app.UIAxesExtrusion.XLim = [0 extrusionTime];
         end
 
@@ -328,19 +359,21 @@ classdef AppV1 < matlab.apps.AppBase
             app.ColumnEfficiencyN.Value = 400;
             
             % Create UITable
-            initialRows = {'Compound 1' 1 1 1; 'Compound 2' 1 1 1};
+            initialRows = {'Compound 1' 1 1 1; 'Compound 2' 2 1 1};
             app.compoundList = uitable(app.UIFigure, ...
                 "ColumnName",{'Compound'; 'KD'; 'Conc. (g/L)'; 'Draw'}, ...
                 "ColumnFormat",{'char' [] [] 'logical'}, ...
                 "Data",initialRows);
             app.compoundList.RowName = {};
+            tableStyle = uistyle("HorizontalAlignment","center");
+            addStyle(app.compoundList, tableStyle);
             app.compoundList.ColumnSortable = true;
             app.compoundList.ColumnEditable = true;
             app.compoundList.Position = [73 12 585 255];
 
             % Create addCompound
             app.addCompound = uibutton(app.UIFigure,'ButtonPushedFcn',@(src,event) addCompoundButtonPushed(app));
-            app.addCompound.Position = [27 242 23 25];
+            app.addCompound.Position = [27 242 25 25];
             app.addCompound.Text = '+';
 
             % Create removeCompound
@@ -377,12 +410,12 @@ classdef AppV1 < matlab.apps.AppBase
 
             % Create PlotButtonClassic
             app.PlotButtonClassic = uibutton(app.ClassicElutionTab, 'ButtonPushedFcn',@(src,event) plotClassicalPrediction(app));
-            app.PlotButtonClassic.Position = [297 450 68 23];
+            app.PlotButtonClassic.Position = [297 445 68 23];
             app.PlotButtonClassic.Text = 'Plot';
 
             % Create ExportButtonClassic
             app.ExportButtonClassic = uibutton(app.ClassicElutionTab, 'ButtonPushedFcn',@(src,event) exportPlotExcel(app));
-            app.ExportButtonClassic.Position = [372 450 68 23];
+            app.ExportButtonClassic.Position = [372 445 68 23];
             app.ExportButtonClassic.Text = 'Export';
 
             % Create ElutionExtrusionTab
@@ -398,29 +431,66 @@ classdef AppV1 < matlab.apps.AppBase
 
             % Create PlotButton_3
             app.PlotButtonExtrusion = uibutton(app.ElutionExtrusionTab, 'ButtonPushedFcn',@(src,event) plotExtrusionPrediction(app));
-            app.PlotButtonExtrusion.Position = [297 450 68 23];
+            app.PlotButtonExtrusion.Position = [297 445 68 23];
             app.PlotButtonExtrusion.Text = 'Plot';
 
             % Create ExportButtonExtrusion
             app.ExportButtonExtrusion = uibutton(app.ElutionExtrusionTab, 'push');
-            app.ExportButtonExtrusion.Position = [372 450 68 23];
+            app.ExportButtonExtrusion.Position = [372 445 68 23];
             app.ExportButtonExtrusion.Text = 'Export';
 
             % Create ExtrusionDurationLabel
             app.ExtrusionDurationLabel = uilabel(app.ElutionExtrusionTab);
             app.ExtrusionDurationLabel.HorizontalAlignment = 'right';
-            app.ExtrusionDurationLabel.Position = [33 450 104 22];
+            app.ExtrusionDurationLabel.Position = [49 445 104 22];
             app.ExtrusionDurationLabel.Text = 'Extrusion Duration';
 
             % Create ExtrusionDuration
             app.ExtrusionDuration = uieditfield(app.ElutionExtrusionTab, 'numeric');
-            app.ExtrusionDuration.Position = [145 450 29 22];
+            app.ExtrusionDuration.Position = [165 445 29 22];
 
             % Create ExtrusionDurationLabelUnits
             app.ExtrusionDurationLabelUnits = uilabel(app.ElutionExtrusionTab);
             app.ExtrusionDurationLabelUnits.HorizontalAlignment = 'center';
-            app.ExtrusionDurationLabelUnits.Position = [182 450 29 22];
+            app.ExtrusionDurationLabelUnits.Position = [200 445 29 22];
             app.ExtrusionDurationLabelUnits.Text = 'min';
+
+            % Create dualModeTab
+            app.dualModeTab = uitab(app.TabGroup);
+            app.dualModeTab.Title = 'Dual Mode';
+
+            % Create UIAxesDual
+            app.UIAxesDual = uiaxes(app.dualModeTab);
+            xlabel(app.UIAxesDual, 'Elution Time')
+            ylabel(app.UIAxesDual, 'Concentration')
+            zlabel(app.UIAxesDual, 'Z')
+            app.UIAxesDual.Position = [8 143 695 301];
+
+            % Create PlotButton_3
+            app.PlotButtonDual = uibutton(app.dualModeTab, 'ButtonPushedFcn',@(src,event) plotDualPrediction(app));
+            app.PlotButtonDual.Position = [297 445 68 23];
+            app.PlotButtonDual.Text = 'Plot';
+
+            % Create ExportButtonDual
+            app.ExportButtonDual = uibutton(app.dualModeTab, 'push');
+            app.ExportButtonDual.Position = [372 445 68 23];
+            app.ExportButtonDual.Text = 'Export';
+
+            % Create DualDurationLabel
+            app.DualDurationLabel = uilabel(app.dualModeTab);
+            app.DualDurationLabel.HorizontalAlignment = 'right';
+            app.DualDurationLabel.Position = [40 445 120 22];
+            app.DualDurationLabel.Text = 'Dual Mode Duration';
+
+            % Create DualDuration
+            app.DualDuration = uieditfield(app.dualModeTab, 'numeric');
+            app.DualDuration.Position = [165 445 29 22];
+
+            % Create DualDurationLabelUnits
+            app.DualDurationLabelUnits = uilabel(app.dualModeTab);
+            app.DualDurationLabelUnits.HorizontalAlignment = 'center';
+            app.DualDurationLabelUnits.Position = [200 445 29 22];
+            app.DualDurationLabelUnits.Text = 'min';
 
             % Create yield and purity table for classic mode
             app.yieldAndPurityClassic = uitable(app.ClassicElutionTab);
@@ -443,36 +513,85 @@ classdef AppV1 < matlab.apps.AppBase
             xlabel(app.UIAxesMulti, 'Elution Time')
             ylabel(app.UIAxesMulti, 'Concentration')
             zlabel(app.UIAxesMulti, 'Z')
-            app.UIAxesMulti.Position = [8 263 695 215];
+            app.UIAxesMulti.Position = [8 229 695 215];
 
             % Create UIAxesMultiPosition
             app.UIAxesMultiPosition = uiaxes(app.MultipleDualModeTab);
             xlabel(app.UIAxesMultiPosition, 'Elution Time')
             ylabel(app.UIAxesMultiPosition, 'Column Position')
             zlabel(app.UIAxesMultiPosition, 'Z')
-            app.UIAxesMultiPosition.Position = [9 57 695 215];
+            app.UIAxesMultiPosition.Position = [200 10 495 215];
 
             % Create PlotButton_4
             app.PlotButtonMulti = uibutton(app.MultipleDualModeTab, 'push');
-            app.PlotButtonMulti.Position = [553 19 68 23];
+            app.PlotButtonMulti.Position = [297 445 68 23];
             app.PlotButtonMulti.Text = 'Plot';
 
             % Create ExportButtonMulti
             app.ExportButtonMulti = uibutton(app.MultipleDualModeTab, 'push');
-            app.ExportButtonMulti.Position = [628 19 68 23];
+            app.ExportButtonMulti.Position = [372 445 68 23];
             app.ExportButtonMulti.Text = 'Export';
 
-            % Create CycleDurationsLabel
-            app.CycleDurationsLabel = uilabel(app.MultipleDualModeTab);
-            app.CycleDurationsLabel.HorizontalAlignment = 'right';
-            app.CycleDurationsLabel.Position = [44 20 90 22];
-            app.CycleDurationsLabel.Text = 'Cycle Durations';
+            % Create SwitchTimeLabel
+            app.SwitchTimeListLabel = uilabel(app.MultipleDualModeTab);
+            app.SwitchTimeListLabel.HorizontalAlignment = 'center';
+            app.SwitchTimeListLabel.FontSize = 18;
+            app.SwitchTimeListLabel.FontWeight = 'bold';
+            app.SwitchTimeListLabel.Position = [48 210 137 24];
+            app.SwitchTimeListLabel.Text = 'Switch Times';
 
-            % Create CycleDurations
-            app.CycleDurations = uieditfield(app.MultipleDualModeTab, 'text');
-            app.CycleDurations.Position = [149 20 200 22];
-            app.CycleDurations.Value = '10 10 10 10 5 5 5';
+            % Create UITable
+            initialRows = {'Cycle 1' 10; 'Cycle 2' 5};
+            app.SwitchTimeList = uitable(app.MultipleDualModeTab, ...
+                "ColumnName",{'Iteration'; 'Time'}, ...
+                "ColumnFormat",{'char' []}, ...
+                "ColumnWidth",{75 73}, ...
+                "Data",initialRows);
+            app.SwitchTimeList.RowName = {};
+            addStyle(app.SwitchTimeList, tableStyle);
+            app.SwitchTimeList.ColumnSortable = true;
+            app.SwitchTimeList.ColumnEditable = true;
+            app.SwitchTimeList.Position = [42 20 150 180];
 
+            % Create addCycle
+            app.addCycle = uibutton(app.MultipleDualModeTab,'ButtonPushedFcn',@(src,event) addCycleButtonPushed(app));
+            app.addCycle.Position = [11 142 25 25];
+            app.addCycle.Text = '+';
+
+            % Create removeCycle
+            app.removeCycle = uibutton(app.MultipleDualModeTab,'ButtonPushedFcn',@(src,event) removeCycleButtonPushed(app));
+            app.removeCycle.Position = [11 109 25 25];
+            app.removeCycle.Text = '-';
+
+            % Create appInfoTab
+            app.Info = uitab(app.TabGroup);
+            app.Info.Title = 'App Info';
+
+            app.InfoTitle = uilabel(app.Info);
+            app.InfoTitle.HorizontalAlignment = 'center';
+            app.InfoTitle.FontSize = 24;
+            app.InfoTitle.FontWeight = 'bold';
+            app.InfoTitle.Position = [140 320 500 50];
+            app.InfoTitle.Text = 'CUP Modeler (Temporary Name)';
+
+            app.InfoVersion = uilabel(app.Info);
+            app.InfoVersion.HorizontalAlignment = 'center';
+            app.InfoVersion.FontSize = 18;
+            app.InfoVersion.Position = [140 290 500 50];
+            app.InfoVersion.Text = 'Version 0.1 alpha';
+
+            app.InfoCitation = uilabel(app.Info);
+            app.InfoCitation.HorizontalAlignment = 'center';
+            app.InfoCitation.FontSize = 12;
+            app.InfoCitation.Position = [140 270 500 50];
+            app.InfoCitation.Text = 'To learn more, check out <insert citation details here>';
+
+            app.InfoCredits = uilabel(app.Info);
+            app.InfoCredits.HorizontalAlignment = 'center';
+            app.InfoCredits.FontSize = 12;
+            app.InfoCredits.Position = [140 250 500 50];
+            app.InfoCredits.Text = 'Mathematical Modeling by Hoon Choi, Interface by Manar Alherech';
+            
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
         end
