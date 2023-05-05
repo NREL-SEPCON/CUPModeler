@@ -6,6 +6,8 @@ classdef AppV1 < matlab.apps.AppBase
         TabGroup                      matlab.ui.container.TabGroup
         ColumnPropertiesLabel         matlab.ui.control.Label
         CompoundListLabel             matlab.ui.control.Label
+        VolumeTimeSwitch              matlab.ui.control.Switch
+        StationaryPhaseSwitch         matlab.ui.control.Switch
         removeCompound                matlab.ui.control.Button
         addCompound                   matlab.ui.control.Button
         compoundList                  matlab.ui.control.Table
@@ -23,6 +25,10 @@ classdef AppV1 < matlab.apps.AppBase
         InjectionVolumeLabelUnits     matlab.ui.control.Label
         StationaryPhaseRetention      matlab.ui.control.NumericEditField
         StationaryPhaseRetentionLabel matlab.ui.control.Label
+        SfCoefficientA                matlab.ui.control.NumericEditField
+        SfCoefficientALabel           matlab.ui.control.Label
+        SfCoefficientB                matlab.ui.control.NumericEditField
+        SfCoefficientBLabel           matlab.ui.control.Label
         ColumnVolume                  matlab.ui.control.NumericEditField
         ColumnVolumeLabel             matlab.ui.control.Label
         ColumnVolumeLabelUnits        matlab.ui.control.Label
@@ -67,12 +73,113 @@ classdef AppV1 < matlab.apps.AppBase
     % Callbacks that handle component events
     methods (Access = private)
 
+        function toggleVolumeTime(app)
+            if string(app.VolumeTimeSwitch.Value) == 'Volume'
+                app.ElutionDurationLabel.Text = 'Elution Volume';
+                app.ElutionDurationLabelUnits.Text = 'mL';
+
+                app.ExtrusionDurationLabel.Text = 'Extrusion Volume';
+                app.ExtrusionDurationLabelUnits.Text = 'mL';
+
+                app.DualDurationLabel.Text = 'Dual Mode Volume';
+                app.DualDurationLabelUnits.Text = 'mL';
+
+                app.UIAxesClassic.XLabel.String = 'Elution Volume (mL)';
+                app.UIAxesExtrusion.XLabel.String = 'Elution Volume (mL)';
+                app.UIAxesDual.XLabel.String = 'Elution Volume (mL)';
+                app.UIAxesMulti.XLabel.String = 'Elution Volume (mL)';
+                app.UIAxesMultiPosition.XLabel.String = 'Elution Volume (mL)';
+
+                app.SwitchTimeList.ColumnName{2} = 'mL';
+                app.SwitchTimeListLabel.Text = 'Switch Volumes';
+                plotClassicalPrediction(app);
+                plotExtrusionPrediction(app);
+            elseif string(app.VolumeTimeSwitch.Value) == 'Time'
+                app.ElutionDurationLabel.Text = 'Elution Duration';
+                app.ElutionDurationLabelUnits.Text = 'min';
+                
+                app.ExtrusionDurationLabel.Text = 'Extrusion Duration';
+                app.ExtrusionDurationLabelUnits.Text = 'min';
+                
+                app.DualDurationLabel.Text = 'Dual Mode Duration';
+                app.DualDurationLabelUnits.Text = 'min';
+                
+                app.UIAxesClassic.XLabel.String = 'Elution Duration (min)';
+                app.UIAxesExtrusion.XLabel.String = 'Elution Duration (min)';
+                app.UIAxesDual.XLabel.String = 'Elution Duration (min)';
+                app.UIAxesMulti.XLabel.String = 'Elution Duration (min)';
+                app.UIAxesMultiPosition.XLabel.String = 'Elution Duration (min)';
+                
+                app.SwitchTimeList.ColumnName{2} = 'min';
+                app.SwitchTimeListLabel.Text = 'Switch Times';
+                plotClassicalPrediction(app);
+                plotExtrusionPrediction(app);
+            end
+        end
+        
+
+        function toggleStationary(app)
+            if string(app.StationaryPhaseSwitch.Value) == 'Set Value'
+                
+                delete(app.SfCoefficientA);
+                delete(app.SfCoefficientALabel);
+                delete(app.SfCoefficientB);
+                delete(app.SfCoefficientBLabel);
+
+                % Create StationaryPhaseRetentionLabel
+                app.StationaryPhaseRetentionLabel = uilabel(app.UIFigure);
+                app.StationaryPhaseRetentionLabel.HorizontalAlignment = 'center';
+                app.StationaryPhaseRetentionLabel.WordWrap = 'on';
+                app.StationaryPhaseRetentionLabel.Position = [202 316 96 57];
+                app.StationaryPhaseRetentionLabel.Text = 'Stationary Phase Retention';
+                
+                % Create StationaryPhaseRetention
+                app.StationaryPhaseRetention = uieditfield(app.UIFigure, 'numeric');
+                app.StationaryPhaseRetention.LowerLimitInclusive = 'off';
+                app.StationaryPhaseRetention.UpperLimitInclusive = 'off';
+                app.StationaryPhaseRetention.Limits = [0 1];
+                app.StationaryPhaseRetention.Position = [300 333 51 22];
+                app.StationaryPhaseRetention.Value = 0.75;
+
+            elseif string(app.StationaryPhaseSwitch.Value) == 'Coefficients'
+
+                delete(app.StationaryPhaseRetention);
+                delete(app.StationaryPhaseRetentionLabel);
+
+                app.SfCoefficientALabel = uilabel(app.UIFigure);
+                app.SfCoefficientALabel.HorizontalAlignment = 'center';
+                app.SfCoefficientALabel.WordWrap = 'on';
+                app.SfCoefficientALabel.Position = [200 316 20 57];
+                app.SfCoefficientALabel.Text = 'A';
+
+                app.SfCoefficientA = uieditfield(app.UIFigure, 'numeric');
+                app.SfCoefficientA.LowerLimitInclusive = 'off';
+                app.SfCoefficientA.UpperLimitInclusive = 'off';
+                app.SfCoefficientA.Limits = [0 1];
+                app.SfCoefficientA.Position = [220 333 51 22];
+                app.SfCoefficientA.Value = 0.9821;
+
+                app.SfCoefficientBLabel = uilabel(app.UIFigure);
+                app.SfCoefficientBLabel.HorizontalAlignment = 'center';
+                app.SfCoefficientBLabel.WordWrap = 'on';
+                app.SfCoefficientBLabel.Position = [280 316 20 57];
+                app.SfCoefficientBLabel.Text = 'B';
+
+                app.SfCoefficientB = uieditfield(app.UIFigure, 'numeric');
+                app.SfCoefficientB.LowerLimitInclusive = 'off';
+                app.SfCoefficientB.UpperLimitInclusive = 'off';
+                app.SfCoefficientB.Limits = [0 1];
+                app.SfCoefficientB.Position = [300 333 51 22];
+                app.SfCoefficientB.Value = 0.1426;
+            end
+        end
+
 
         function addCompoundButtonPushed(app)
             newRowPosition = height(app.compoundList.Data)+1;
             newRowPositionString = num2str(newRowPosition);
             compoundName = {char(append('Compound',' ',newRowPositionString))};
-            app.compoundList.Data(end+1,:) = [compoundName,1,1,1];
+            app.compoundList.Data(end+1,:) = [compoundName,1,1];
         end
 
 
@@ -98,18 +205,28 @@ classdef AppV1 < matlab.apps.AppBase
 
         function [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime] = computeValues(app)
             F = app.FlowRate.Value;
-            Sf = app.StationaryPhaseRetention.Value;
+            if string(app.StationaryPhaseSwitch.Value) == 'Set Value'
+                Sf = app.StationaryPhaseRetention.Value;
+            elseif string(app.StationaryPhaseSwitch.Value) == "Coefficients"
+                Sf = app.SfCoefficientA.Value - app.SfCoefficientB.Value*F;
+            end
             KD = cell2mat(app.compoundList.Data(:,2));
             Vc = app.ColumnVolume.Value;
             Ncup = app.ColumnEfficiencyN.Value;
             C0 = cell2mat(app.compoundList.Data(:,3));
             Vinj = app.InjectionVolume.Value;
             elutionTime = app.ElutionDuration.Value;
-
-            Vcm = F*elutionTime;
+            
             Vcup = Vc/Ncup;
             Vmcup = Vcup*(1-Sf);
-            dtElution = Vmcup/F;
+            Vcm = F*elutionTime;
+
+            if string(app.VolumeTimeSwitch.Value) == 'Volume'
+                dtElution = Vmcup;
+            elseif string(app.VolumeTimeSwitch.Value) == 'Time'
+                dtElution = Vmcup/F;
+            end
+
         end
 
 
@@ -127,32 +244,32 @@ classdef AppV1 < matlab.apps.AppBase
             app.UIAxesClassic.XLim = [0 elutionTime];
         end
 
-
-        %function computeYieldAndProductivity(app telute Cout)
-            %[row col] = size(Cout);
+%{
+        function computeYieldAndProductivity(app telute Cout)
+            [row col] = size(Cout);
             
-            %for j = 1:row
-            %    peakheight(j) = max(Cout(j,:));
-            %end
+            for j = 1:row
+                peakheight(j) = max(Cout(j,:));
+            end
             
-            %sig = [telute;  Cout]';
-            %pmin = min (peakheight);
-            %lowcut = pmin*theta;
+            sig = [telute;  Cout]';
+            pmin = min (peakheight);
+            lowcut = pmin*theta;
 
-            %Y(i,:) = yield;
-            %Pu(i,:) = purity;
-            %Rs(i,:) = res;
+            Y(i,:) = yield;
+            Pu(i,:) = purity;
+            Rs(i,:) = res;
 
 
-            %tEnd = tbreak(4)/60; % process time, hour
-            %pr = Vinj.*C0.*yield./(Vc/1000)./tEnd;  %productivity = input*purity*yield/column volume/process time
-            %Prod(i,:) = pr;
+            tEnd = tbreak(4)/60; % process time, hour
+            pr = Vinj.*C0.*yield./(Vc/1000)./tEnd;  %productivity = input*purity*yield/column volume/process time
+            Prod(i,:) = pr;
 
-            %aResult(i,:) = [F  res yield  pr  purity  Sf  Ncup];
+            aResult(i,:) = [F  res yield  pr  purity  Sf  Ncup];
 
-            %[tbreak,yield,purity,res] = CalArea2(sig,lowcut,purity);
-        %end
-
+            [tbreak,yield,purity,res] = CalArea2(sig,lowcut,purity);
+        end
+%}
 
         function plotExtrusionPrediction(app)
             [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime] = computeValues(app);
@@ -166,8 +283,12 @@ classdef AppV1 < matlab.apps.AppBase
             telute = (dtElution).*Nturn;
 
             extrusionTime = app.ExtrusionDuration.Value + elutionTime;
-            columnVolumeExtrudedTime = elutionTime+(Vc/F);
-            
+            if string(app.VolumeTimeSwitch.Value) == 'Volume'
+                columnVolumeExtrudedTime = elutionTime+Vc;
+            elseif string(app.VolumeTimeSwitch.Value) == 'Time'
+                columnVolumeExtrudedTime = elutionTime+(Vc/F);
+            end
+
             plot(app.UIAxesExtrusion, telute, Cout, 'linewidth', 2.0);
             xline(app.UIAxesExtrusion, elutionTime, '-.r');
             xline(app.UIAxesExtrusion, columnVolumeExtrudedTime, '-.r');
@@ -222,7 +343,7 @@ classdef AppV1 < matlab.apps.AppBase
             
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [100 100 1440 500];
+            app.UIFigure.Position = [40 250 1440 500];
             app.UIFigure.Name = 'CUP Modeler';
             
             % Create TabGroup
@@ -253,7 +374,7 @@ classdef AppV1 < matlab.apps.AppBase
             app.FlowRate = uieditfield(app.UIFigure, 'numeric');
             app.FlowRate.LowerLimitInclusive = 'off';
             app.FlowRate.Limits = [0 Inf];
-            app.FlowRate.RoundFractionalValues = 'on';
+            app.FlowRate.RoundFractionalValues = 'off';
             app.FlowRate.Position = [73 406 51 22];
             app.FlowRate.Value = 1;
             
@@ -274,7 +395,7 @@ classdef AppV1 < matlab.apps.AppBase
             app.ColumnVolume = uieditfield(app.UIFigure, 'numeric');
             app.ColumnVolume.LowerLimitInclusive = 'off';
             app.ColumnVolume.Limits = [0 Inf];
-            app.ColumnVolume.RoundFractionalValues = 'on';
+            app.ColumnVolume.RoundFractionalValues = 'off';
             app.ColumnVolume.Position = [277 406 44 22];
             app.ColumnVolume.Value = 81;
             
@@ -314,7 +435,7 @@ classdef AppV1 < matlab.apps.AppBase
             app.StationaryPhaseRetentionLabel = uilabel(app.UIFigure);
             app.StationaryPhaseRetentionLabel.HorizontalAlignment = 'center';
             app.StationaryPhaseRetentionLabel.WordWrap = 'on';
-            app.StationaryPhaseRetentionLabel.Position = [73 316 96 57];
+            app.StationaryPhaseRetentionLabel.Position = [202 316 96 57];
             app.StationaryPhaseRetentionLabel.Text = 'Stationary Phase Retention';
             
             % Create StationaryPhaseRetention
@@ -322,47 +443,39 @@ classdef AppV1 < matlab.apps.AppBase
             app.StationaryPhaseRetention.LowerLimitInclusive = 'off';
             app.StationaryPhaseRetention.UpperLimitInclusive = 'off';
             app.StationaryPhaseRetention.Limits = [0 1];
-            app.StationaryPhaseRetention.Position = [180 333 51 22];
+            app.StationaryPhaseRetention.Position = [300 333 51 22];
             app.StationaryPhaseRetention.Value = 0.75;
-            
+
+            % Create Switch
+            app.StationaryPhaseSwitch = uiswitch(app.UIFigure, 'slider', 'ValueChangedFcn',@(src,event) toggleStationary(app));
+            app.StationaryPhaseSwitch.Items = {'Set Value', 'Coefficients'};
+            app.StationaryPhaseSwitch.Position = [70 338 45 20];
+            app.StationaryPhaseSwitch.Value = 'Set Value';
+
             % Create ColumnDeadVolumeLabelUnits
             app.ColumnDeadVolumeLabelUnits = uilabel(app.UIFigure);
             app.ColumnDeadVolumeLabelUnits.HorizontalAlignment = 'center';
             app.ColumnDeadVolumeLabelUnits.WordWrap = 'on';
-            app.ColumnDeadVolumeLabelUnits.Position = [407 338 24 14];
+            app.ColumnDeadVolumeLabelUnits.Position = [677 338 24 14];
             app.ColumnDeadVolumeLabelUnits.Text = 'mL';
             
             % Create ColumnDeadVolumeLabel
             app.ColumnDeadVolumeLabel = uilabel(app.UIFigure);
             app.ColumnDeadVolumeLabel.HorizontalAlignment = 'center';
             app.ColumnDeadVolumeLabel.WordWrap = 'on';
-            app.ColumnDeadVolumeLabel.Position = [260 328 89 34];
+            app.ColumnDeadVolumeLabel.Position = [530 328 89 34];
             app.ColumnDeadVolumeLabel.Text = 'Column Dead Volume';
             
             % Create ColumnDeadVolume
             app.ColumnDeadVolume = uieditfield(app.UIFigure, 'numeric');
             app.ColumnDeadVolume.Limits = [0 Inf];
-            app.ColumnDeadVolume.Position = [358 334 44 22];
-            
-            % Create ColumnEfficiencyNLabel
-            app.ColumnEfficiencyNLabel = uilabel(app.UIFigure);
-            app.ColumnEfficiencyNLabel.HorizontalAlignment = 'center';
-            app.ColumnEfficiencyNLabel.WordWrap = 'on';
-            app.ColumnEfficiencyNLabel.Position = [473 331 91 28];
-            app.ColumnEfficiencyNLabel.Text = 'Column Efficiency (N)';
-            
-            % Create ColumnEfficiencyN
-            app.ColumnEfficiencyN = uieditfield(app.UIFigure, 'numeric');
-            app.ColumnEfficiencyN.UpperLimitInclusive = 'off';
-            app.ColumnEfficiencyN.Limits = [1 Inf];
-            app.ColumnEfficiencyN.Position = [578 334 51 22];
-            app.ColumnEfficiencyN.Value = 400;
+            app.ColumnDeadVolume.Position = [628 334 44 22];
             
             % Create UITable
-            initialRows = {'Compound 1' 1 1 1; 'Compound 2' 2 1 1};
+            initialRows = {'Compound 1' 1 1; 'Compound 2' 2 1};
             app.compoundList = uitable(app.UIFigure, ...
-                "ColumnName",{'Compound'; 'KD'; 'Conc. (g/L)'; 'Draw'}, ...
-                "ColumnFormat",{'char' [] [] 'logical'}, ...
+                "ColumnName",{'Compound'; 'KD'; 'Conc. (g/L)'}, ...
+                "ColumnFormat",{'char' [] []}, ...
                 "Data",initialRows);
             app.compoundList.RowName = {};
             tableStyle = uistyle("HorizontalAlignment","center");
@@ -396,6 +509,12 @@ classdef AppV1 < matlab.apps.AppBase
             app.ColumnPropertiesLabel.FontWeight = 'bold';
             app.ColumnPropertiesLabel.Position = [276 460 166 24];
             app.ColumnPropertiesLabel.Text = 'Column Properties';
+
+            % Create Switch
+            app.VolumeTimeSwitch = uiswitch(app.UIFigure, 'slider', 'ValueChangedFcn',@(src,event) toggleVolumeTime(app));
+            app.VolumeTimeSwitch.Items = {'Time', 'Volume'};
+            app.VolumeTimeSwitch.Position = [420 338 45 20];
+            app.VolumeTimeSwitch.Value = 'Time';
 
             % Create ClassicElutionTab
             app.ClassicElutionTab = uitab(app.TabGroup);
@@ -471,12 +590,12 @@ classdef AppV1 < matlab.apps.AppBase
             app.PlotButtonDual.Position = [297 445 68 23];
             app.PlotButtonDual.Text = 'Plot';
 
-            % Create ExportButtonDual
+            % Create ExportButtDualDurationLabelonDual
             app.ExportButtonDual = uibutton(app.dualModeTab, 'push');
             app.ExportButtonDual.Position = [372 445 68 23];
             app.ExportButtonDual.Text = 'Export';
 
-            % Create DualDurationLabel
+            % Create 
             app.DualDurationLabel = uilabel(app.dualModeTab);
             app.DualDurationLabel.HorizontalAlignment = 'right';
             app.DualDurationLabel.Position = [40 445 120 22];
@@ -543,7 +662,7 @@ classdef AppV1 < matlab.apps.AppBase
             % Create UITable
             initialRows = {'Cycle 1' 10; 'Cycle 2' 5};
             app.SwitchTimeList = uitable(app.MultipleDualModeTab, ...
-                "ColumnName",{'Iteration'; 'Time'}, ...
+                "ColumnName",{'Iteration'; 'min'}, ...
                 "ColumnFormat",{'char' []}, ...
                 "ColumnWidth",{75 73}, ...
                 "Data",initialRows);
@@ -566,6 +685,20 @@ classdef AppV1 < matlab.apps.AppBase
             % Create appInfoTab
             app.Info = uitab(app.TabGroup);
             app.Info.Title = 'App Info';
+
+            % Create ColumnEfficiencyNLabel
+            app.ColumnEfficiencyNLabel = uilabel(app.Info);
+            app.ColumnEfficiencyNLabel.HorizontalAlignment = 'center';
+            app.ColumnEfficiencyNLabel.WordWrap = 'on';
+            app.ColumnEfficiencyNLabel.Position = [73 501 91 28];
+            app.ColumnEfficiencyNLabel.Text = 'Column Efficiency (N)';
+            
+            % Create ColumnEfficiencyN
+            app.ColumnEfficiencyN = uieditfield(app.Info, 'numeric');
+            app.ColumnEfficiencyN.UpperLimitInclusive = 'off';
+            app.ColumnEfficiencyN.Limits = [1 Inf];
+            app.ColumnEfficiencyN.Position = [78 504 51 22];
+            app.ColumnEfficiencyN.Value = 400;
 
             app.InfoTitle = uilabel(app.Info);
             app.InfoTitle.HorizontalAlignment = 'center';
