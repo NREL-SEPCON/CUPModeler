@@ -451,6 +451,7 @@ classdef AppV1 < matlab.apps.AppBase
             app.StationaryPhaseSwitch.Items = {'Set Value', 'Coefficients'};
             app.StationaryPhaseSwitch.Position = [70 338 45 20];
             app.StationaryPhaseSwitch.Value = 'Set Value';
+            set(app.StationaryPhaseSwitch, 'Tooltip', 'Coefficients must be obtained from the literature for each solvent system. In this setting, Sf = A + (B x flowrate)')
 
             % Create ColumnDeadVolumeLabelUnits
             app.ColumnDeadVolumeLabelUnits = uilabel(app.UIFigure);
