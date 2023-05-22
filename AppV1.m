@@ -179,7 +179,7 @@ classdef AppV1 < matlab.apps.AppBase
             newRowPosition = height(app.compoundList.Data)+1;
             newRowPositionString = num2str(newRowPosition);
             compoundName = {char(append('Compound',' ',newRowPositionString))};
-            app.compoundList.Data(end+1,:) = [compoundName,1,1];
+            app.compoundList.Data(end+1,:) = [compoundName,1,1,0];
         end
 
 
@@ -229,6 +229,12 @@ classdef AppV1 < matlab.apps.AppBase
 
         end
 
+        function addPuritiesToTable(Purity)
+            for i = 1:length(Purity)
+                app.compoundList.Data(i,4) = {Purity(i)};
+            end
+        end
+
 
        function plotClassicalPrediction(app)
             [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime] = computeValues(app);
@@ -238,10 +244,17 @@ classdef AppV1 < matlab.apps.AppBase
             Nturn = Vspan/Vmcup;
             telute = (dtElution).*Nturn;
 
-            %computeYieldAndProductivity(app telute Cout); %replace app with purity and theta, two user inputs that must be added and flowed in through compute values
+            [Purity, integralRanges] = purityCalculation(telute, Cout);
 
             plot(app.UIAxesClassic, telute, Cout, 'linewidth', 2.0);
             app.UIAxesClassic.XLim = [0 elutionTime];
+
+            %This should be addPuritiesToTable(Purity), but that doesn't work for some damn reason!!!
+
+            for i = 1:length(Purity)
+                app.compoundList.Data(i,4) = {Purity(i)};
+            end
+
         end
 
 %{
@@ -285,15 +298,24 @@ classdef AppV1 < matlab.apps.AppBase
             extrusionTime = app.ExtrusionDuration.Value + elutionTime;
             if string(app.VolumeTimeSwitch.Value) == 'Volume'
                 columnVolumeExtrudedTime = elutionTime+Vc;
+                sweepTime = elutionTime+(Vc*(1-Sf));
             elseif string(app.VolumeTimeSwitch.Value) == 'Time'
                 columnVolumeExtrudedTime = elutionTime+(Vc/F);
+                sweepTime = elutionTime+((Vc*(1-Sf))/F);
             end
 
             plot(app.UIAxesExtrusion, telute, Cout, 'linewidth', 2.0);
             xline(app.UIAxesExtrusion, elutionTime, '-.r');
             xline(app.UIAxesExtrusion, columnVolumeExtrudedTime, '-.r');
+            xline(app.UIAxesExtrusion, sweepTime, '-.r');
 
             app.UIAxesExtrusion.XLim = [0 extrusionTime];
+
+            [Purity, integralRanges] = purityCalculation(telute, Cout);
+
+            for i = 1:length(Purity)
+                app.compoundList.Data(i,4) = {Purity(i)};
+            end
         end
 
 
@@ -473,10 +495,10 @@ classdef AppV1 < matlab.apps.AppBase
             app.ColumnDeadVolume.Position = [628 334 44 22];
             
             % Create UITable
-            initialRows = {'Compound 1' 1 1; 'Compound 2' 2 1};
+            initialRows = {'Compound 1' 1 1 0; 'Compound 2' 2 1 0};
             app.compoundList = uitable(app.UIFigure, ...
-                "ColumnName",{'Compound'; 'KD'; 'Conc. (g/L)'}, ...
-                "ColumnFormat",{'char' [] []}, ...
+                "ColumnName",{'Compound'; 'KD'; 'Conc. (g/L)'; 'Purity (%)'}, ...
+                "ColumnFormat",{'char' [] [] []}, ...
                 "Data",initialRows);
             app.compoundList.RowName = {};
             tableStyle = uistyle("HorizontalAlignment","center");
