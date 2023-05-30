@@ -13,6 +13,7 @@ classdef AppV1 < matlab.apps.AppBase
         compoundList                  matlab.ui.control.Table
         yieldAndPurityClassic         matlab.ui.control.Table
         yieldAndPurityExtrusion       matlab.ui.control.Table
+        yieldAndPurityDual            matlab.ui.control.Table
         ElutionDuration               matlab.ui.control.NumericEditField
         ElutionDurationLabel          matlab.ui.control.Label
         ColumnDeadVolume              matlab.ui.control.NumericEditField
@@ -92,8 +93,7 @@ classdef AppV1 < matlab.apps.AppBase
 
                 app.SwitchTimeList.ColumnName{2} = 'mL';
                 app.SwitchTimeListLabel.Text = 'Switch Volumes';
-                plotClassicalPrediction(app);
-                plotExtrusionPrediction(app);
+                plotCUPPrediction(app);
             elseif string(app.VolumeTimeSwitch.Value) == 'Time'
                 app.ElutionDurationLabel.Text = 'Elution Duration';
                 app.ElutionDurationLabelUnits.Text = 'min';
@@ -112,8 +112,7 @@ classdef AppV1 < matlab.apps.AppBase
                 
                 app.SwitchTimeList.ColumnName{2} = 'min';
                 app.SwitchTimeListLabel.Text = 'Switch Times';
-                plotClassicalPrediction(app);
-                plotExtrusionPrediction(app);
+                plotCUPPrediction(app);
             end
         end
         
@@ -215,109 +214,111 @@ classdef AppV1 < matlab.apps.AppBase
             Ncup = app.ColumnEfficiencyN.Value;
             C0 = cell2mat(app.compoundList.Data(:,3));
             Vinj = app.InjectionVolume.Value;
+
+
             elutionTime = app.ElutionDuration.Value;
+            
+
             
             Vcup = Vc/Ncup;
             Vmcup = Vcup*(1-Sf);
-            Vcm = F*elutionTime;
-
+            
             if string(app.VolumeTimeSwitch.Value) == 'Volume'
                 dtElution = Vmcup;
+                Vcm = elutionTime;
             elseif string(app.VolumeTimeSwitch.Value) == 'Time'
+                Vcm = F*elutionTime;
                 dtElution = Vmcup/F;
             end
 
         end
 
-        function addPuritiesToTable(Purity)
+        function addPuritiesToTable(app, Purity)
             for i = 1:length(Purity)
                 app.compoundList.Data(i,4) = {Purity(i)};
             end
         end
 
 
-       function plotClassicalPrediction(app)
+       function plotCUPPrediction(app)
             [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime] = computeValues(app);
 
             [Vspan Cout X Y] = CupV6(Sf, KD, Vc, Ncup, Vcm, C0, Vinj);
-
+            
             Nturn = Vspan/Vmcup;
             telute = (dtElution).*Nturn;
 
-            [Purity, integralRanges] = purityCalculation(telute, Cout);
+            identifier = string(gcbo().Tag);
 
-            plot(app.UIAxesClassic, telute, Cout, 'linewidth', 2.0);
-            app.UIAxesClassic.XLim = [0 elutionTime];
-
-            %This should be addPuritiesToTable(Purity), but that doesn't work for some damn reason!!!
-
-            for i = 1:length(Purity)
-                app.compoundList.Data(i,4) = {Purity(i)};
+            if identifier == 'Switch'
+                identifier = string(app.TabGroup.SelectedTab.Tag);
             end
 
-        end
+            if identifier == 'ClassicPlot'
 
-%{
-        function computeYieldAndProductivity(app telute Cout)
-            [row col] = size(Cout);
-            
-            for j = 1:row
-                peakheight(j) = max(Cout(j,:));
+                plot(app.UIAxesClassic, telute, Cout, 'linewidth', 2.0);
+                app.UIAxesClassic.XLim = [0 elutionTime];
             end
             
-            sig = [telute;  Cout]';
-            pmin = min (peakheight);
-            lowcut = pmin*theta;
+            if identifier == 'ExtrusionPlot'
+                [Vspan, Cout, Xtot, Ytot] = EECCC_V7(KD, Vc, Sf, X, Y);
+                
+                Nturn = Vspan/Vmcup;
+                telute = (dtElution).*Nturn;
 
-            Y(i,:) = yield;
-            Pu(i,:) = purity;
-            Rs(i,:) = res;
+                if string(app.VolumeTimeSwitch.Value) == 'Volume'
+                    F = 1;
+                end
 
+                columnVolumeExtrudedTime = (elutionTime*F+Vc)/F;
+                sweepTime = (elutionTime*F+(Vc*(1-Sf)))/F;
+                
+                extrusionTime = app.ExtrusionDuration.Value + elutionTime;
+                
+                plot(app.UIAxesExtrusion, telute, Cout, 'linewidth', 2.0);
+                xline(app.UIAxesExtrusion, elutionTime, '-.r');
+                xline(app.UIAxesExtrusion, columnVolumeExtrudedTime, '-.r');
+                xline(app.UIAxesExtrusion, sweepTime, '-.r');
+                
+                app.UIAxesExtrusion.XLim = [0 extrusionTime];
+            end
+            
+            if identifier == 'DualPlot'
+                Vdm = app.DualDuration.Value;
+                dualTime = elutionTime + Vdm;
+                Vdm = Vdm*F;
+                
+                if string(app.VolumeTimeSwitch.Value) == 'Volume'
+                    Vdm = Vdm/F;
+                    dualTime = elutionTime + Vdm;
+                end
+                
+                [Vspan Cout, X, Y] = DualV2(KD, Vc, Sf, F, Vdm, X, Y)
+                
+                Nturn = Vspan/Vmcup;
+                telute = (dtElution).*Nturn;
+                
+                if string(app.VolumeTimeSwitch.Value) == 'Volume'
+                    F = 1;
+                end
 
-            tEnd = tbreak(4)/60; % process time, hour
-            pr = Vinj.*C0.*yield./(Vc/1000)./tEnd;  %productivity = input*purity*yield/column volume/process time
-            Prod(i,:) = pr;
+                stationaryPhaseVolume = (elutionTime*F+Vc*Sf)/F;
 
-            aResult(i,:) = [F  res yield  pr  purity  Sf  Ncup];
+                plot(app.UIAxesDual, telute, Cout, 'linewidth', 2.0);
+                xline(app.UIAxesDual, elutionTime, '-.r');
+                xline(app.UIAxesDual, stationaryPhaseVolume, '-.r');
 
-            [tbreak,yield,purity,res] = CalArea2(sig,lowcut,purity);
-        end
-%}
-
-        function plotExtrusionPrediction(app)
-            [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime] = computeValues(app);
-
-            [Vspan Cout X Y] = CupV6(Sf, KD, Vc, Ncup, Vcm, C0, Vinj);
-            Xcm = X;
-            Ycm = Y;
-            [Vspan, Cout, Xtot, Ytot] = EECCC_V7(KD, Vc, Sf, Xcm, Ycm);
-
-            Nturn = Vspan/Vmcup;
-            telute = (dtElution).*Nturn;
-
-            extrusionTime = app.ExtrusionDuration.Value + elutionTime;
-            if string(app.VolumeTimeSwitch.Value) == 'Volume'
-                columnVolumeExtrudedTime = elutionTime+Vc;
-                sweepTime = elutionTime+(Vc*(1-Sf));
-            elseif string(app.VolumeTimeSwitch.Value) == 'Time'
-                columnVolumeExtrudedTime = elutionTime+(Vc/F);
-                sweepTime = elutionTime+((Vc*(1-Sf))/F);
+                app.UIAxesDual.XLim = [0 dualTime];
             end
 
-            plot(app.UIAxesExtrusion, telute, Cout, 'linewidth', 2.0);
-            xline(app.UIAxesExtrusion, elutionTime, '-.r');
-            xline(app.UIAxesExtrusion, columnVolumeExtrudedTime, '-.r');
-            xline(app.UIAxesExtrusion, sweepTime, '-.r');
-
-            app.UIAxesExtrusion.XLim = [0 extrusionTime];
+            if identifier == 'MultiPlot'                
+                %
+            end
 
             [Purity, integralRanges] = purityCalculation(telute, Cout);
+            app.addPuritiesToTable(Purity);
 
-            for i = 1:length(Purity)
-                app.compoundList.Data(i,4) = {Purity(i)};
-            end
         end
-
 
         function plotMDMPrediction(app)
             [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime] = computeValues(app);
@@ -352,8 +353,6 @@ classdef AppV1 < matlab.apps.AppBase
 
             writetable(compiledData, filename);
         end
-
-        
     end
 
     % Component initialization
@@ -398,7 +397,7 @@ classdef AppV1 < matlab.apps.AppBase
             app.FlowRate.Limits = [0 Inf];
             app.FlowRate.RoundFractionalValues = 'off';
             app.FlowRate.Position = [73 406 51 22];
-            app.FlowRate.Value = 1;
+            app.FlowRate.Value = 5;
             
             % Create ColumnVolumeLabelUnits
             app.ColumnVolumeLabelUnits = uilabel(app.UIFigure);
@@ -431,7 +430,7 @@ classdef AppV1 < matlab.apps.AppBase
             % Create ElutionDuration
             app.ElutionDuration = uieditfield(app.UIFigure, 'numeric');
             app.ElutionDuration.Position = [437 406 51 22];
-            app.ElutionDuration.Value = 30;
+            app.ElutionDuration.Value = 60;
             
             % Create InjectionVolumeLabelUnits
             app.InjectionVolumeLabelUnits = uilabel(app.UIFigure);
@@ -538,10 +537,12 @@ classdef AppV1 < matlab.apps.AppBase
             app.VolumeTimeSwitch.Items = {'Time', 'Volume'};
             app.VolumeTimeSwitch.Position = [420 338 45 20];
             app.VolumeTimeSwitch.Value = 'Time';
+            app.VolumeTimeSwitch.Tag = 'Switch';
 
             % Create ClassicElutionTab
             app.ClassicElutionTab = uitab(app.TabGroup);
             app.ClassicElutionTab.Title = 'Classic Elution';
+            app.ClassicElutionTab.Tag = 'ClassicPlot';
 
             % Create UIAxesClassic
             app.UIAxesClassic = uiaxes(app.ClassicElutionTab);
@@ -551,18 +552,21 @@ classdef AppV1 < matlab.apps.AppBase
             app.UIAxesClassic.Position = [8 143 695 301];
 
             % Create PlotButtonClassic
-            app.PlotButtonClassic = uibutton(app.ClassicElutionTab, 'ButtonPushedFcn',@(src,event) plotClassicalPrediction(app));
+            app.PlotButtonClassic = uibutton(app.ClassicElutionTab, 'ButtonPushedFcn',@(src,event) plotCUPPrediction(app));
             app.PlotButtonClassic.Position = [297 445 68 23];
             app.PlotButtonClassic.Text = 'Plot';
+            app.PlotButtonClassic.Tag = 'ClassicPlot';
 
             % Create ExportButtonClassic
             app.ExportButtonClassic = uibutton(app.ClassicElutionTab, 'ButtonPushedFcn',@(src,event) exportPlotExcel(app));
             app.ExportButtonClassic.Position = [372 445 68 23];
             app.ExportButtonClassic.Text = 'Export';
+            app.ExportButtonClassic.Tag = 'ClassicExport';
 
             % Create ElutionExtrusionTab
             app.ElutionExtrusionTab = uitab(app.TabGroup);
             app.ElutionExtrusionTab.Title = 'Elution-Extrusion';
+            app.ElutionExtrusionTab.Tag = 'ExtrusionPlot';
 
             % Create UIAxesExtrusion
             app.UIAxesExtrusion = uiaxes(app.ElutionExtrusionTab);
@@ -572,14 +576,16 @@ classdef AppV1 < matlab.apps.AppBase
             app.UIAxesExtrusion.Position = [8 143 695 301];
 
             % Create PlotButton_3
-            app.PlotButtonExtrusion = uibutton(app.ElutionExtrusionTab, 'ButtonPushedFcn',@(src,event) plotExtrusionPrediction(app));
+            app.PlotButtonExtrusion = uibutton(app.ElutionExtrusionTab, 'ButtonPushedFcn',@(src,event) plotCUPPrediction(app));
             app.PlotButtonExtrusion.Position = [297 445 68 23];
             app.PlotButtonExtrusion.Text = 'Plot';
+            app.PlotButtonExtrusion.Tag = 'ExtrusionPlot';
 
             % Create ExportButtonExtrusion
-            app.ExportButtonExtrusion = uibutton(app.ElutionExtrusionTab, 'push');
+            app.ExportButtonExtrusion = uibutton(app.ElutionExtrusionTab, 'ButtonPushedFcn',@(src,event) exportPlotExcel(app));
             app.ExportButtonExtrusion.Position = [372 445 68 23];
             app.ExportButtonExtrusion.Text = 'Export';
+            app.ExportButtonExtrusion.Tag = 'ExtrusionExport';
 
             % Create ExtrusionDurationLabel
             app.ExtrusionDurationLabel = uilabel(app.ElutionExtrusionTab);
@@ -600,6 +606,7 @@ classdef AppV1 < matlab.apps.AppBase
             % Create dualModeTab
             app.dualModeTab = uitab(app.TabGroup);
             app.dualModeTab.Title = 'Dual Mode';
+            app.dualModeTab.Tag = 'DualPlot';
 
             % Create UIAxesDual
             app.UIAxesDual = uiaxes(app.dualModeTab);
@@ -609,14 +616,16 @@ classdef AppV1 < matlab.apps.AppBase
             app.UIAxesDual.Position = [8 143 695 301];
 
             % Create PlotButton_3
-            app.PlotButtonDual = uibutton(app.dualModeTab, 'ButtonPushedFcn',@(src,event) plotDualPrediction(app));
+            app.PlotButtonDual = uibutton(app.dualModeTab, 'ButtonPushedFcn',@(src,event) plotCUPPrediction(app));
             app.PlotButtonDual.Position = [297 445 68 23];
             app.PlotButtonDual.Text = 'Plot';
+            app.PlotButtonDual.Tag = 'DualPlot';
 
             % Create ExportButtDualDurationLabelonDual
-            app.ExportButtonDual = uibutton(app.dualModeTab, 'push');
+            app.ExportButtonDual = uibutton(app.dualModeTab, 'ButtonPushedFcn',@(src,event) exportPlotExcel(app));
             app.ExportButtonDual.Position = [372 445 68 23];
             app.ExportButtonDual.Text = 'Export';
+            app.ExportButtonDual.Tag = 'DualExport';
 
             % Create 
             app.DualDurationLabel = uilabel(app.dualModeTab);
@@ -636,19 +645,26 @@ classdef AppV1 < matlab.apps.AppBase
 
             % Create yield and purity table for classic mode
             app.yieldAndPurityClassic = uitable(app.ClassicElutionTab);
-            app.yieldAndPurityClassic.ColumnName = {'Compound'; 'Yield'; 'Purity'};
+            app.yieldAndPurityClassic.ColumnName = {'Compound'; 'Start'; 'End'; 'Yield'; 'Purity'};
             app.yieldAndPurityClassic.RowName = {};
             app.yieldAndPurityClassic.Position = [49 12 647 122];
             
             % Create yield and purity table for Elution Extrusion
             app.yieldAndPurityExtrusion = uitable(app.ElutionExtrusionTab);
-            app.yieldAndPurityExtrusion.ColumnName = {'Compound'; 'Yield'; 'Purity'};
+            app.yieldAndPurityExtrusion.ColumnName = {'Compound'; 'Start'; 'End'; 'Yield'; 'Purity'};
             app.yieldAndPurityExtrusion.RowName = {};
             app.yieldAndPurityExtrusion.Position = [49 12 647 122];
+
+            % Create yield and purity table for Dual Mode
+            app.yieldAndPurityDual = uitable(app.dualModeTab);
+            app.yieldAndPurityDual.ColumnName = {'Compound'; 'Start'; 'End'; 'Yield'; 'Purity'};
+            app.yieldAndPurityDual.RowName = {};
+            app.yieldAndPurityDual.Position = [49 12 647 122];
 
             % Create MultipleDualModeTab
             app.MultipleDualModeTab = uitab(app.TabGroup);
             app.MultipleDualModeTab.Title = 'Multiple Dual Mode';
+            app.MultipleDualModeTab.Tag = 'DualPlot';
 
             % Create UIAxesMulti
             app.UIAxesMulti = uiaxes(app.MultipleDualModeTab);
@@ -668,11 +684,13 @@ classdef AppV1 < matlab.apps.AppBase
             app.PlotButtonMulti = uibutton(app.MultipleDualModeTab, 'push');
             app.PlotButtonMulti.Position = [297 445 68 23];
             app.PlotButtonMulti.Text = 'Plot';
+            app.PlotButtonMulti.Tag = 'MultiPlot';
 
             % Create ExportButtonMulti
-            app.ExportButtonMulti = uibutton(app.MultipleDualModeTab, 'push');
+            app.ExportButtonMulti = uibutton(app.MultipleDualModeTab, 'ButtonPushedFcn',@(src,event) exportPlotExcel(app));
             app.ExportButtonMulti.Position = [372 445 68 23];
             app.ExportButtonMulti.Text = 'Export';
+            app.ExportButtonMulti.Tag = 'MultiExport';
 
             % Create SwitchTimeLabel
             app.SwitchTimeListLabel = uilabel(app.MultipleDualModeTab);
