@@ -214,12 +214,8 @@ classdef AppV1 < matlab.apps.AppBase
             Ncup = app.ColumnEfficiencyN.Value;
             C0 = cell2mat(app.compoundList.Data(:,3));
             Vinj = app.InjectionVolume.Value;
-
-
             elutionTime = app.ElutionDuration.Value;
-            
 
-            
             Vcup = Vc/Ncup;
             Vmcup = Vcup*(1-Sf);
             
@@ -230,7 +226,6 @@ classdef AppV1 < matlab.apps.AppBase
                 Vcm = F*elutionTime;
                 dtElution = Vmcup/F;
             end
-
         end
 
         function addPuritiesToTable(app, Purity)
@@ -255,30 +250,31 @@ classdef AppV1 < matlab.apps.AppBase
             end
 
             if identifier == 'ClassicPlot'
-
                 plot(app.UIAxesClassic, telute, Cout, 'linewidth', 2.0);
                 app.UIAxesClassic.XLim = [0 elutionTime];
             end
             
             if identifier == 'ExtrusionPlot'
-                [Vspan, Cout, Xtot, Ytot] = EECCC_V7(KD, Vc, Sf, X, Y);
-                
-                Nturn = Vspan/Vmcup;
-                telute = (dtElution).*Nturn;
+%                 [Vspan, Cout, Xtot, Ytot] = EECCC_V7(KD, Vc, Sf, X, Y);
+                [Vspan, Cout, Xtot, Ytot, Vbc] = EECCC_V8(KD, Vc, Sf, X, Y);
+
+%                 Nturn = Vspan/Vmcup;
+%                 telute = (dtElution).*Nturn;
 
                 if string(app.VolumeTimeSwitch.Value) == 'Volume'
                     F = 1;
                 end
-
-                columnVolumeExtrudedTime = (elutionTime*F+Vc)/F;
-                sweepTime = (elutionTime*F+(Vc*(1-Sf)))/F;
                 
+                telute = Vspan/F;
+                columnVolumeExtrudedTime = Vbc(1)/F;
+                sweepTime = Vbc(2)/F;
                 extrusionTime = app.ExtrusionDuration.Value + elutionTime;
-                
+
+                           
                 plot(app.UIAxesExtrusion, telute, Cout, 'linewidth', 2.0);
                 xline(app.UIAxesExtrusion, elutionTime, '-.r');
                 xline(app.UIAxesExtrusion, columnVolumeExtrudedTime, '-.r');
-                xline(app.UIAxesExtrusion, sweepTime, '-.r');
+                xline(app.UIAxesExtrusion, sweepTime, '--b');
                 
                 app.UIAxesExtrusion.XLim = [0 extrusionTime];
             end
@@ -286,58 +282,75 @@ classdef AppV1 < matlab.apps.AppBase
             if identifier == 'DualPlot'
                 Vdm = app.DualDuration.Value;
                 dualTime = elutionTime + Vdm;
-                Vdm = Vdm*F;
-                
-                if string(app.VolumeTimeSwitch.Value) == 'Volume'
-                    Vdm = Vdm/F;
-                    dualTime = elutionTime + Vdm;
+%                 Vdm = Vdm*F;
+%                 
+                if string(app.VolumeTimeSwitch.Value) == 'Time' %Time right?
+                    Vdm = Vdm*F;
+                    dualTime = elutionTime*F + Vdm;
                 end
                 
-                [Vspan Cout, X, Y] = DualV2(KD, Vc, Sf, F, Vdm, X, Y)
+                [Vspan Cout, X, Y] = DualV2(KD, Vc, Sf, F, Vdm, X, Y);
                 
-                Nturn = Vspan/Vmcup;
-                telute = (dtElution).*Nturn;
-                
+
                 if string(app.VolumeTimeSwitch.Value) == 'Volume'
                     F = 1;
                 end
 
-                stationaryPhaseVolume = (elutionTime*F+Vc*Sf)/F;
+               telute = Vspan/F;
+               stationaryPhaseVolume = dualTime/F;
+%                 stationaryPhaseVolume = (elutionTime*F+Vc*Sf)/F;
 
                 plot(app.UIAxesDual, telute, Cout, 'linewidth', 2.0);
-                xline(app.UIAxesDual, elutionTime, '-.r');
-                xline(app.UIAxesDual, stationaryPhaseVolume, '-.r');
+                xline(app.UIAxesDual, Vcm/F, '-.r');
+                xline(app.UIAxesDual, stationaryPhaseVolume, '--b');
 
-                app.UIAxesDual.XLim = [0 dualTime];
+                app.UIAxesDual.XLim = [0 stationaryPhaseVolume];
             end
 
-            if identifier == 'MultiPlot'                
-                %
+            if identifier == 'MultiPlot'
+                if string(app.VolumeTimeSwitch.Value) == 'Volume'
+                    Vcm = [Vcm; cell2mat(app.SwitchTimeList.Data(:,2))]; % cumsum(SwitchTimeList.Data(:,2))? 
+                elseif string(app.VolumeTimeSwitch.Value) == 'Time'
+                    switchVolumes = cell2mat(app.SwitchTimeList.Data(:,2))*F;
+                    Vcm = [Vcm; switchVolumes];
+                end
+
+                [Vtot, Ctot, Xtot, Ytot, Tcut, VswDM, VswCM] = MDMV2(Sf, KD, Vc, Ncup, C0, Vinj, Vcm);
+                %[Vx Vy] = MDMrT(Sf, KD, Vc, F, Vcm);
+
+               telute = Vtot/F;
+
+                if string(app.VolumeTimeSwitch.Value) == 'Time'
+                    Vcm = Vcm/F;
+                end
+
+                plot(app.UIAxesMulti, telute, Cout, 'linewidth', 2.0);
+                xline(app.UIAxesMulti, VswDM, '-.r');
+                xline(app.UIAxesMulti, VswCM, '-.b');
+
+
+                plot(app.UIAxesMultiPosition, Xtot(end,:), Ytot(end,:), 'linewidth', 2.0);
+
+                xMatrix = sum(Xtot, 3);
+                yMatrix = sum(Ytot, 3);
+
+                contourSpacing = linspace(0.005, .1, 20);
+
+                contourf(app.UIAxesMultiPosition, xMatrix, contourSpacing);
+                
+              
+                xline(app.UIAxesMultiPosition, VswDM, '-.r');
+                xline(app.UIAxesMultiPosition, VswCM, '-.b');
+%                 for i = 1:length(Vcm)
+%                     xline(app.UIAxesMulti, sum(Vcm(1:i)), '-.r');
+%                     %xline(app.UIAxesMultiPosition, sum(Vcm(1:i)), '-.r');
+%                 end
             end
 
-            [Purity, integralRanges] = purityCalculation(telute, Cout);
-            app.addPuritiesToTable(Purity);
+            %[Purity, integralRanges] = purityCalculation(telute, Cout);
+            %app.addPuritiesToTable(Purity);
 
         end
-
-        function plotMDMPrediction(app)
-            [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime] = computeValues(app);
-
-            [Vspan Cout X Y] = CupV6(Sf, KD, Vc, Ncup, Vcm, C0, Vinj);
-            Xcm = X;
-            Ycm = Y;
-            Vdm = F*time_dual;
-            [Vspan2 Cout, X, Y] = DualV2(KD, Vc, Sf, F, Vdm, Xcm, Ycm)
-
-            Nturn = Vspan2/Vmcup;
-            telute = (dtElution).*Nturn;
-
-            extrusionTime = app.ExtrusionDuration.Value + elutionTime;
-
-            plot(app.UIAxesExtrusion, telute, Cout, 'linewidth', 2.0);
-            app.UIAxesExtrusion.XLim = [0 extrusionTime];
-        end
-
 
         function exportPlotExcel(app)
             [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution] = computeValues(app);
@@ -472,7 +485,7 @@ classdef AppV1 < matlab.apps.AppBase
             app.StationaryPhaseSwitch.Items = {'Set Value', 'Coefficients'};
             app.StationaryPhaseSwitch.Position = [70 338 45 20];
             app.StationaryPhaseSwitch.Value = 'Set Value';
-            set(app.StationaryPhaseSwitch, 'Tooltip', 'Coefficients must be obtained from the literature for each solvent system. In this setting, Sf = A + (B x flowrate)')
+            set(app.StationaryPhaseSwitch, 'Tooltip', 'Coefficients must be obtained from the literature for each solvent system. In this setting, Sf = A - (B x flowrate)')
 
             % Create ColumnDeadVolumeLabelUnits
             app.ColumnDeadVolumeLabelUnits = uilabel(app.UIFigure);
@@ -664,7 +677,7 @@ classdef AppV1 < matlab.apps.AppBase
             % Create MultipleDualModeTab
             app.MultipleDualModeTab = uitab(app.TabGroup);
             app.MultipleDualModeTab.Title = 'Multiple Dual Mode';
-            app.MultipleDualModeTab.Tag = 'DualPlot';
+            app.MultipleDualModeTab.Tag = 'MultiPlot';
 
             % Create UIAxesMulti
             app.UIAxesMulti = uiaxes(app.MultipleDualModeTab);
@@ -681,7 +694,7 @@ classdef AppV1 < matlab.apps.AppBase
             app.UIAxesMultiPosition.Position = [200 10 495 215];
 
             % Create PlotButton_4
-            app.PlotButtonMulti = uibutton(app.MultipleDualModeTab, 'push');
+            app.PlotButtonMulti = uibutton(app.MultipleDualModeTab, 'ButtonPushedFcn',@(src,event) plotCUPPrediction(app));
             app.PlotButtonMulti.Position = [297 445 68 23];
             app.PlotButtonMulti.Text = 'Plot';
             app.PlotButtonMulti.Tag = 'MultiPlot';
