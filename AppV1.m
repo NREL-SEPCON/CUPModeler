@@ -75,6 +75,8 @@ classdef AppV1 < matlab.apps.AppBase
     methods (Access = private)
 
         function toggleVolumeTime(app)
+            F = app.FlowRate.Value;
+
             if string(app.VolumeTimeSwitch.Value) == 'Volume'
                 app.ElutionDurationLabel.Text = 'Elution Volume';
                 app.ElutionDurationLabelUnits.Text = 'mL';
@@ -93,6 +95,15 @@ classdef AppV1 < matlab.apps.AppBase
 
                 app.SwitchTimeList.ColumnName{2} = 'mL';
                 app.SwitchTimeListLabel.Text = 'Switch Volumes';
+
+                app.ElutionDuration.Value = app.ElutionDuration.Value*F;
+                app.ExtrusionDuration.Value = app.ExtrusionDuration.Value*F;
+                app.DualDuration.Value = app.DualDuration.Value*F;
+
+                for i = 1:height(app.SwitchTimeList.Data)
+                    app.SwitchTimeList.Data(i,2) = {cell2mat(app.SwitchTimeList.Data(i,2))*F};
+                end
+
                 plotCUPPrediction(app);
             elseif string(app.VolumeTimeSwitch.Value) == 'Time'
                 app.ElutionDurationLabel.Text = 'Elution Duration';
@@ -112,6 +123,15 @@ classdef AppV1 < matlab.apps.AppBase
                 
                 app.SwitchTimeList.ColumnName{2} = 'min';
                 app.SwitchTimeListLabel.Text = 'Switch Times';
+
+                app.ElutionDuration.Value = app.ElutionDuration.Value/F;
+                app.ExtrusionDuration.Value = app.ExtrusionDuration.Value/F;
+                app.DualDuration.Value = app.DualDuration.Value/F;
+
+                for i = 1:height(app.SwitchTimeList.Data)
+                    app.SwitchTimeList.Data(i,2) = {cell2mat(app.SwitchTimeList.Data(i,2))/F};
+                end
+
                 plotCUPPrediction(app);
             end
         end
@@ -270,11 +290,18 @@ classdef AppV1 < matlab.apps.AppBase
                 sweepTime = Vbc(2)/F;
                 extrusionTime = app.ExtrusionDuration.Value + elutionTime;
 
-                           
+                sweepStartLabel = sprintf(['Sweep Start\n']) + string(elutionTime) + ' min';
+                sweepEndLabel = sprintf(['Sweep End\n']) + string(round(sweepTime, 2)) + ' min';
+                
+                if string(app.VolumeTimeSwitch.Value) == 'Volume'
+                    sweepStartLabel = sprintf(['Sweep Start\n']) + string(elutionTime) + ' mL';
+                    sweepEndLabel = sprintf(['Sweep End\n']) + string(round(sweepTime, 2)) + ' mL';
+                end
+
                 plot(app.UIAxesExtrusion, telute, Cout, 'linewidth', 2.0);
-                xline(app.UIAxesExtrusion, elutionTime, '-.r');
+                xline(app.UIAxesExtrusion, elutionTime, '-.r', sweepStartLabel);
                 xline(app.UIAxesExtrusion, columnVolumeExtrudedTime, '-.r');
-                xline(app.UIAxesExtrusion, sweepTime, '--b');
+                xline(app.UIAxesExtrusion, sweepTime, '--b', sweepEndLabel);
                 
                 app.UIAxesExtrusion.XLim = [0 extrusionTime];
             end
@@ -291,17 +318,20 @@ classdef AppV1 < matlab.apps.AppBase
                 
                 [Vspan Cout, X, Y] = DualV2(KD, Vc, Sf, F, Vdm, X, Y);
                 
-
+                dualSwitchLabel = string(round(Vcm/F, 2)) + ' min';
+                
                 if string(app.VolumeTimeSwitch.Value) == 'Volume'
                     F = 1;
+                    dualSwitchLabel = string(round(Vcm, 2)) + ' mL';
                 end
 
                telute = Vspan/F;
                stationaryPhaseVolume = dualTime/F;
 %                 stationaryPhaseVolume = (elutionTime*F+Vc*Sf)/F;
 
+
                 plot(app.UIAxesDual, telute, Cout, 'linewidth', 2.0);
-                xline(app.UIAxesDual, Vcm/F, '-.r');
+                xline(app.UIAxesDual, Vcm/F, '-.r', dualSwitchLabel);
                 xline(app.UIAxesDual, stationaryPhaseVolume, '--b');
 
                 app.UIAxesDual.XLim = [0 stationaryPhaseVolume];
@@ -309,42 +339,43 @@ classdef AppV1 < matlab.apps.AppBase
 
             if identifier == 'MultiPlot'
                 if string(app.VolumeTimeSwitch.Value) == 'Volume'
-                    Vcm = [Vcm; cell2mat(app.SwitchTimeList.Data(:,2))]; % cumsum(SwitchTimeList.Data(:,2))? 
-                elseif string(app.VolumeTimeSwitch.Value) == 'Time'
-                    switchVolumes = cell2mat(app.SwitchTimeList.Data(:,2))*F;
-                    Vcm = [Vcm; switchVolumes];
+                    F = 1;
                 end
+
+                Vcm = [Vcm; cell2mat(app.SwitchTimeList.Data(:,2))*F];
 
                 [Vtot, Ctot, Xtot, Ytot, Tcut, VswDM, VswCM] = MDMV2(Sf, KD, Vc, Ncup, C0, Vinj, Vcm);
                 %[Vx Vy] = MDMrT(Sf, KD, Vc, F, Vcm);
-
-               telute = Vtot/F;
-
+                
                 if string(app.VolumeTimeSwitch.Value) == 'Time'
-                    Vcm = Vcm/F;
+                    Vtot = Vtot/F;
+                    VswCM = VswCM/F;
+                    VswDM = VswDM/F;
                 end
 
-                plot(app.UIAxesMulti, telute, Cout, 'linewidth', 2.0);
+                plot(app.UIAxesMulti, Vtot, Ctot, 'linewidth', 2.0);
                 xline(app.UIAxesMulti, VswDM, '-.r');
                 xline(app.UIAxesMulti, VswCM, '-.b');
+                
+                app.UIAxesMulti.XLim = [0 Vtot(end)];
+                app.UIAxesMulti.YLim = [0 Inf];
 
-
-                plot(app.UIAxesMultiPosition, Xtot(end,:), Ytot(end,:), 'linewidth', 2.0);
+                %plot(app.UIAxesMultiPosition, Xtot(end,:), Ytot(end,:), 'linewidth', 2.0);
 
                 xMatrix = sum(Xtot, 3);
-                yMatrix = sum(Ytot, 3);
+                yAxis = [1:size(xMatrix,1)].*(1/size(xMatrix,1));
+                %yMatrix = sum(Ytot, 3);
 
-                contourSpacing = linspace(0.005, .1, 20);
+                contourSpacing = linspace(0.005, .1, 30);
 
-                contourf(app.UIAxesMultiPosition, xMatrix, contourSpacing);
-                
+                contourf(app.UIAxesMultiPosition, Vtot, yAxis, xMatrix, contourSpacing, 'linecolor', 'none');
               
                 xline(app.UIAxesMultiPosition, VswDM, '-.r');
                 xline(app.UIAxesMultiPosition, VswCM, '-.b');
-%                 for i = 1:length(Vcm)
-%                     xline(app.UIAxesMulti, sum(Vcm(1:i)), '-.r');
-%                     %xline(app.UIAxesMultiPosition, sum(Vcm(1:i)), '-.r');
-%                 end
+
+                app.UIAxesMultiPosition.XLim = [0 Vtot(end)];
+                app.UIAxesMultiPosition.YLim = [0 1];
+
             end
 
             %[Purity, integralRanges] = purityCalculation(telute, Cout);
