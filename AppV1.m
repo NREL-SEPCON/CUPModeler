@@ -14,6 +14,12 @@ classdef AppV1 < matlab.apps.AppBase
         yieldAndPurityClassic         matlab.ui.control.Table
         yieldAndPurityExtrusion       matlab.ui.control.Table
         yieldAndPurityDual            matlab.ui.control.Table
+        ExtrusionLinesCheckbox        matlab.ui.control.CheckBox
+        ExtrusionLinesLabelsCheckbox  matlab.ui.control.CheckBox
+        DualLinesCheckbox             matlab.ui.control.CheckBox
+        DualLinesLabelsCheckbox       matlab.ui.control.CheckBox
+        MultiLinesCheckbox            matlab.ui.control.CheckBox
+        MultiLinesLabelsCheckbox      matlab.ui.control.CheckBox
         ElutionDuration               matlab.ui.control.NumericEditField
         ElutionDurationLabel          matlab.ui.control.Label
         ColumnDeadVolume              matlab.ui.control.NumericEditField
@@ -104,7 +110,8 @@ classdef AppV1 < matlab.apps.AppBase
                     app.SwitchTimeList.Data(i,2) = {cell2mat(app.SwitchTimeList.Data(i,2))*F};
                 end
 
-                plotCUPPrediction(app);
+                CUPPrediction(app);
+
             elseif string(app.VolumeTimeSwitch.Value) == 'Time'
                 app.ElutionDurationLabel.Text = 'Elution Duration';
                 app.ElutionDurationLabelUnits.Text = 'min';
@@ -132,7 +139,7 @@ classdef AppV1 < matlab.apps.AppBase
                     app.SwitchTimeList.Data(i,2) = {cell2mat(app.SwitchTimeList.Data(i,2))/F};
                 end
 
-                plotCUPPrediction(app);
+                CUPPrediction(app);
             end
         end
         
@@ -255,7 +262,7 @@ classdef AppV1 < matlab.apps.AppBase
         end
 
 
-       function plotCUPPrediction(app)
+       function CUPPrediction(app)
             [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime] = computeValues(app);
 
             [Vspan Cout X Y] = CupV6(Sf, KD, Vc, Ncup, Vcm, C0, Vinj);
@@ -269,17 +276,13 @@ classdef AppV1 < matlab.apps.AppBase
                 identifier = string(app.TabGroup.SelectedTab.Tag);
             end
 
-            if identifier == 'ClassicPlot'
+            if contains(identifier, 'Classic')
                 plot(app.UIAxesClassic, telute, Cout, 'linewidth', 2.0);
                 app.UIAxesClassic.XLim = [0 elutionTime];
             end
             
-            if identifier == 'ExtrusionPlot'
-%                 [Vspan, Cout, Xtot, Ytot] = EECCC_V7(KD, Vc, Sf, X, Y);
+            if contains(identifier, 'Extrusion')
                 [Vspan, Cout, Xtot, Ytot, Vbc] = EECCC_V8(KD, Vc, Sf, X, Y);
-
-%                 Nturn = Vspan/Vmcup;
-%                 telute = (dtElution).*Nturn;
 
                 if string(app.VolumeTimeSwitch.Value) == 'Volume'
                     F = 1;
@@ -290,54 +293,68 @@ classdef AppV1 < matlab.apps.AppBase
                 sweepTime = Vbc(2)/F;
                 extrusionTime = app.ExtrusionDuration.Value + elutionTime;
 
-                sweepStartLabel = sprintf(['Sweep Start\n']) + string(elutionTime) + ' min';
-                sweepEndLabel = sprintf(['Sweep End\n']) + string(round(sweepTime, 2)) + ' min';
-                
-                if string(app.VolumeTimeSwitch.Value) == 'Volume'
-                    sweepStartLabel = sprintf(['Sweep Start\n']) + string(elutionTime) + ' mL';
-                    sweepEndLabel = sprintf(['Sweep End\n']) + string(round(sweepTime, 2)) + ' mL';
+                sweepStartLabel = '';
+                sweepEndLabel = '';
+
+                if app.ExtrusionLinesLabelsCheckbox.Value
+                    LinesLabelsUnits = ' min';
+                    if string(app.VolumeTimeSwitch.Value) == 'Volume'
+                        LinesLabelsUnits = ' mL';
+                    end
+                    sweepStartLabel = sprintf(['Sweep Start\n']) + string(elutionTime) + LinesLabelsUnits;
+                    sweepEndLabel = sprintf(['Sweep End\n']) + string(round(sweepTime, 2)) + LinesLabelsUnits;
                 end
 
                 plot(app.UIAxesExtrusion, telute, Cout, 'linewidth', 2.0);
-                xline(app.UIAxesExtrusion, elutionTime, '-.r', sweepStartLabel);
-                xline(app.UIAxesExtrusion, columnVolumeExtrudedTime, '-.r');
-                xline(app.UIAxesExtrusion, sweepTime, '--b', sweepEndLabel);
-                
+
+                if app.ExtrusionLinesCheckbox.Value
+                    xline(app.UIAxesExtrusion, elutionTime, '-.r', sweepStartLabel);
+                    xline(app.UIAxesExtrusion, columnVolumeExtrudedTime, '-.r');
+                    xline(app.UIAxesExtrusion, sweepTime, '--b', sweepEndLabel);
+                end
+
                 app.UIAxesExtrusion.XLim = [0 extrusionTime];
             end
             
-            if identifier == 'DualPlot'
+            if contains(identifier, 'Dual')
                 Vdm = app.DualDuration.Value;
                 dualTime = elutionTime + Vdm;
-%                 Vdm = Vdm*F;
-%                 
-                if string(app.VolumeTimeSwitch.Value) == 'Time' %Time right?
+  
+                if string(app.VolumeTimeSwitch.Value) == 'Time'
                     Vdm = Vdm*F;
                     dualTime = elutionTime*F + Vdm;
                 end
                 
                 [Vspan Cout, X, Y] = DualV2(KD, Vc, Sf, F, Vdm, X, Y);
                 
-                dualSwitchLabel = string(round(Vcm/F, 2)) + ' min';
-                
                 if string(app.VolumeTimeSwitch.Value) == 'Volume'
                     F = 1;
-                    dualSwitchLabel = string(round(Vcm, 2)) + ' mL';
+                end
+                
+                dualSwitchLabel = '';
+                
+                if app.DualLinesLabelsCheckbox.Value
+                    LinesLabelsUnits = ' min';
+                    if string(app.VolumeTimeSwitch.Value) == 'Volume'
+                        LinesLabelsUnits = ' mL';
+                    end
+                    dualSwitchLabel = string(round(Vcm/F, 2)) + LinesLabelsUnits;
                 end
 
-               telute = Vspan/F;
-               stationaryPhaseVolume = dualTime/F;
-%                 stationaryPhaseVolume = (elutionTime*F+Vc*Sf)/F;
-
+                telute = Vspan/F;
+                stationaryPhaseVolume = dualTime/F;
 
                 plot(app.UIAxesDual, telute, Cout, 'linewidth', 2.0);
-                xline(app.UIAxesDual, Vcm/F, '-.r', dualSwitchLabel);
-                xline(app.UIAxesDual, stationaryPhaseVolume, '--b');
+
+                if app.DualLinesCheckbox.Value
+                    xline(app.UIAxesDual, Vcm/F, '-.r', dualSwitchLabel);
+                    xline(app.UIAxesDual, stationaryPhaseVolume, '--b');
+                end
 
                 app.UIAxesDual.XLim = [0 stationaryPhaseVolume];
             end
 
-            if identifier == 'MultiPlot'
+            if contains(identifier, 'Multi')
                 if string(app.VolumeTimeSwitch.Value) == 'Volume'
                     F = 1;
                 end
@@ -346,56 +363,66 @@ classdef AppV1 < matlab.apps.AppBase
 
                 [Vtot, Ctot, Xtot, Ytot, Tcut, VswDM, VswCM] = MDMV2(Sf, KD, Vc, Ncup, C0, Vinj, Vcm);
                 %[Vx Vy] = MDMrT(Sf, KD, Vc, F, Vcm);
-                
+
                 if string(app.VolumeTimeSwitch.Value) == 'Time'
                     Vtot = Vtot/F;
                     VswCM = VswCM/F;
                     VswDM = VswDM/F;
                 end
 
+                VswCMText = '';
+                VswDMText = '';
+                
+                if app.MultiLinesLabelsCheckbox.Value
+                    LinesLabelsUnits = ' min';
+                    if string(app.VolumeTimeSwitch.Value) == 'Volume'
+                        LinesLabelsUnits = ' mL';
+                    end
+                    VswCMText = string(round(VswCM, 2)) + LinesLabelsUnits;
+                    VswDMText = string(round(VswDM, 2)) + LinesLabelsUnits;
+                end
+
                 plot(app.UIAxesMulti, Vtot, Ctot, 'linewidth', 2.0);
-                xline(app.UIAxesMulti, VswDM, '-.r');
-                xline(app.UIAxesMulti, VswCM, '-.b');
                 
                 app.UIAxesMulti.XLim = [0 Vtot(end)];
                 app.UIAxesMulti.YLim = [0 Inf];
-
-                %plot(app.UIAxesMultiPosition, Xtot(end,:), Ytot(end,:), 'linewidth', 2.0);
-
+                
                 xMatrix = sum(Xtot, 3);
                 yAxis = [1:size(xMatrix,1)].*(1/size(xMatrix,1));
-                %yMatrix = sum(Ytot, 3);
-
+                
                 contourSpacing = linspace(0.005, .1, 30);
-
+                
                 contourf(app.UIAxesMultiPosition, Vtot, yAxis, xMatrix, contourSpacing, 'linecolor', 'none');
-              
-                xline(app.UIAxesMultiPosition, VswDM, '-.r');
-                xline(app.UIAxesMultiPosition, VswCM, '-.b');
+                
+                if app.MultiLinesCheckbox.Value
+                    xline(app.UIAxesMulti, VswDM, '-.r', VswDMText);
+                    xline(app.UIAxesMulti, VswCM, '-.b', VswCMText);
+                    xline(app.UIAxesMultiPosition, VswDM, '-.r', VswDMText);
+                    xline(app.UIAxesMultiPosition, VswCM, '-.b', VswCMText);
+                end
 
                 app.UIAxesMultiPosition.XLim = [0 Vtot(end)];
                 app.UIAxesMultiPosition.YLim = [0 1];
 
+                telute = Vtot;
+                Cout = Ctot;
+
+            end
+
+
+            if contains(identifier, 'Export')
+                ExportIdentifier = erase(identifier, 'Export');
+
+                filename = [ExportIdentifier + ' ' + app.VolumeTimeSwitch.Value + ' export ' + string(datetime) + '.xlsx'];
+                individualCurves = array2table(Cout.', 'VariableNames', app.compoundList.Data(:,1));
+                compiledData = [array2table(telute.'), individualCurves];
+
+                writetable(compiledData, filename);
             end
 
             %[Purity, integralRanges] = purityCalculation(telute, Cout);
             %app.addPuritiesToTable(Purity);
 
-        end
-
-        function exportPlotExcel(app)
-            [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution] = computeValues(app);
-
-            [Vspan Cout X Y] = CupV6(Sf, KD, Vc, Ncup, Vcm, C0, Vinj);
-
-            Nturn = Vspan/Vmcup;
-            telute = (dtElution).*Nturn;
-
-            filename = 'export.xlsx';
-            individualCurves = array2table(Cout.', 'VariableNames', app.compoundList.Data(:,1));
-            compiledData = [array2table(telute.'), individualCurves];
-
-            writetable(compiledData, filename);
         end
     end
 
@@ -596,13 +623,13 @@ classdef AppV1 < matlab.apps.AppBase
             app.UIAxesClassic.Position = [8 143 695 301];
 
             % Create PlotButtonClassic
-            app.PlotButtonClassic = uibutton(app.ClassicElutionTab, 'ButtonPushedFcn',@(src,event) plotCUPPrediction(app));
+            app.PlotButtonClassic = uibutton(app.ClassicElutionTab, 'ButtonPushedFcn',@(src,event) CUPPrediction(app));
             app.PlotButtonClassic.Position = [297 445 68 23];
             app.PlotButtonClassic.Text = 'Plot';
             app.PlotButtonClassic.Tag = 'ClassicPlot';
 
             % Create ExportButtonClassic
-            app.ExportButtonClassic = uibutton(app.ClassicElutionTab, 'ButtonPushedFcn',@(src,event) exportPlotExcel(app));
+            app.ExportButtonClassic = uibutton(app.ClassicElutionTab, 'ButtonPushedFcn',@(src,event) CUPPrediction(app));
             app.ExportButtonClassic.Position = [372 445 68 23];
             app.ExportButtonClassic.Text = 'Export';
             app.ExportButtonClassic.Tag = 'ClassicExport';
@@ -620,13 +647,13 @@ classdef AppV1 < matlab.apps.AppBase
             app.UIAxesExtrusion.Position = [8 143 695 301];
 
             % Create PlotButton_3
-            app.PlotButtonExtrusion = uibutton(app.ElutionExtrusionTab, 'ButtonPushedFcn',@(src,event) plotCUPPrediction(app));
+            app.PlotButtonExtrusion = uibutton(app.ElutionExtrusionTab, 'ButtonPushedFcn',@(src,event) CUPPrediction(app));
             app.PlotButtonExtrusion.Position = [297 445 68 23];
             app.PlotButtonExtrusion.Text = 'Plot';
             app.PlotButtonExtrusion.Tag = 'ExtrusionPlot';
 
             % Create ExportButtonExtrusion
-            app.ExportButtonExtrusion = uibutton(app.ElutionExtrusionTab, 'ButtonPushedFcn',@(src,event) exportPlotExcel(app));
+            app.ExportButtonExtrusion = uibutton(app.ElutionExtrusionTab, 'ButtonPushedFcn',@(src,event) CUPPrediction(app));
             app.ExportButtonExtrusion.Position = [372 445 68 23];
             app.ExportButtonExtrusion.Text = 'Export';
             app.ExportButtonExtrusion.Tag = 'ExtrusionExport';
@@ -647,6 +674,19 @@ classdef AppV1 < matlab.apps.AppBase
             app.ExtrusionDurationLabelUnits.Position = [200 445 29 22];
             app.ExtrusionDurationLabelUnits.Text = 'min';
 
+
+            %Create ExtrusionLinesCheckbox
+            app.ExtrusionLinesCheckbox = uicheckbox(app.ElutionExtrusionTab,...
+                'Text', 'Lines?',...
+                'Value', 1,...
+                'Position', [550 450 102 15]);
+
+            %Create ExtrusionLinesLabelsCheckbox
+            app.ExtrusionLinesLabelsCheckbox = uicheckbox(app.ElutionExtrusionTab,...
+                'Text', 'Labels?',...
+                'Value', 1,...
+                'Position', [610 450 102 15]);
+
             % Create dualModeTab
             app.dualModeTab = uitab(app.TabGroup);
             app.dualModeTab.Title = 'Dual Mode';
@@ -660,13 +700,13 @@ classdef AppV1 < matlab.apps.AppBase
             app.UIAxesDual.Position = [8 143 695 301];
 
             % Create PlotButton_3
-            app.PlotButtonDual = uibutton(app.dualModeTab, 'ButtonPushedFcn',@(src,event) plotCUPPrediction(app));
+            app.PlotButtonDual = uibutton(app.dualModeTab, 'ButtonPushedFcn',@(src,event) CUPPrediction(app));
             app.PlotButtonDual.Position = [297 445 68 23];
             app.PlotButtonDual.Text = 'Plot';
             app.PlotButtonDual.Tag = 'DualPlot';
 
             % Create ExportButtDualDurationLabelonDual
-            app.ExportButtonDual = uibutton(app.dualModeTab, 'ButtonPushedFcn',@(src,event) exportPlotExcel(app));
+            app.ExportButtonDual = uibutton(app.dualModeTab, 'ButtonPushedFcn',@(src,event) CUPPrediction(app));
             app.ExportButtonDual.Position = [372 445 68 23];
             app.ExportButtonDual.Text = 'Export';
             app.ExportButtonDual.Tag = 'DualExport';
@@ -705,6 +745,18 @@ classdef AppV1 < matlab.apps.AppBase
             app.yieldAndPurityDual.RowName = {};
             app.yieldAndPurityDual.Position = [49 12 647 122];
 
+            %Create DualLinesCheckbox
+            app.DualLinesCheckbox = uicheckbox(app.dualModeTab,...
+                'Text', 'Lines?',...
+                'Value', 1,...
+                'Position', [550 450 102 15]);
+
+            %Create DualLinesLabelsCheckbox
+            app.DualLinesLabelsCheckbox = uicheckbox(app.dualModeTab,...
+                'Text', 'Labels?',...
+                'Value', 1,...
+                'Position', [610 450 102 15]);
+
             % Create MultipleDualModeTab
             app.MultipleDualModeTab = uitab(app.TabGroup);
             app.MultipleDualModeTab.Title = 'Multiple Dual Mode';
@@ -725,13 +777,13 @@ classdef AppV1 < matlab.apps.AppBase
             app.UIAxesMultiPosition.Position = [200 10 495 215];
 
             % Create PlotButton_4
-            app.PlotButtonMulti = uibutton(app.MultipleDualModeTab, 'ButtonPushedFcn',@(src,event) plotCUPPrediction(app));
+            app.PlotButtonMulti = uibutton(app.MultipleDualModeTab, 'ButtonPushedFcn',@(src,event) CUPPrediction(app));
             app.PlotButtonMulti.Position = [297 445 68 23];
             app.PlotButtonMulti.Text = 'Plot';
             app.PlotButtonMulti.Tag = 'MultiPlot';
 
             % Create ExportButtonMulti
-            app.ExportButtonMulti = uibutton(app.MultipleDualModeTab, 'ButtonPushedFcn',@(src,event) exportPlotExcel(app));
+            app.ExportButtonMulti = uibutton(app.MultipleDualModeTab, 'ButtonPushedFcn',@(src,event) CUPPrediction(app));
             app.ExportButtonMulti.Position = [372 445 68 23];
             app.ExportButtonMulti.Text = 'Export';
             app.ExportButtonMulti.Tag = 'MultiExport';
@@ -770,6 +822,18 @@ classdef AppV1 < matlab.apps.AppBase
             % Create appInfoTab
             app.Info = uitab(app.TabGroup);
             app.Info.Title = 'App Info';
+
+            %Create MultiLinesCheckbox
+            app.MultiLinesCheckbox = uicheckbox(app.MultipleDualModeTab,...
+                'Text', 'Lines?',...
+                'Value', 1,...
+                'Position', [550 450 102 15]);
+
+            %Create MultiLinesLabelsCheckbox
+            app.MultiLinesLabelsCheckbox = uicheckbox(app.MultipleDualModeTab,...
+                'Text', 'Labels?',...
+                'Value', 1,...
+                'Position', [610 450 102 15]);
 
             % Create ColumnEfficiencyNLabel
             app.ColumnEfficiencyNLabel = uilabel(app.Info);
