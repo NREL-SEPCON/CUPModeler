@@ -413,11 +413,14 @@ classdef AppV1 < matlab.apps.AppBase
             if contains(identifier, 'Export')
                 ExportIdentifier = erase(identifier, 'Export');
 
-                filename = [ExportIdentifier + ' ' + app.VolumeTimeSwitch.Value + ' export ' + string(datetime) + '.xlsx'];
+                filename = [ExportIdentifier + ' ' + app.VolumeTimeSwitch.Value + ' export ' + string(datetime)];
                 individualCurves = array2table(Cout.', 'VariableNames', app.compoundList.Data(:,1));
                 compiledData = [array2table(telute.'), individualCurves];
 
-                writetable(compiledData, filename);
+                writetable(compiledData, [filename + '.xlsx']);
+
+                exportedPlot = sprintf('app.UIAxes' + ExportIdentifier)
+                exportgraphics(eval(exportedPlot), [filename + '.pdf'], 'ContentType', 'vector');
             end
 
             %[Purity, integralRanges] = purityCalculation(telute, Cout);
