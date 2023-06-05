@@ -6,14 +6,12 @@ classdef AppV1 < matlab.apps.AppBase
         TabGroup                      matlab.ui.container.TabGroup
         ColumnPropertiesLabel         matlab.ui.control.Label
         CompoundListLabel             matlab.ui.control.Label
-        VolumeTimeSwitch              matlab.ui.control.Switch
+        VolumeTimeSwitch              matlab.ui.control.Switch  
         StationaryPhaseSwitch         matlab.ui.control.Switch
         removeCompound                matlab.ui.control.Button
         addCompound                   matlab.ui.control.Button
         compoundList                  matlab.ui.control.Table
-        yieldAndPurityClassic         matlab.ui.control.Table
-        yieldAndPurityExtrusion       matlab.ui.control.Table
-        yieldAndPurityDual            matlab.ui.control.Table
+        includeInjectionVolCheckbox   matlab.ui.control.CheckBox
         ClassicPeaksCheckbox          matlab.ui.control.CheckBox
         ExtrusionPeaksCheckbox        matlab.ui.control.CheckBox
         DualPeaksCheckbox             matlab.ui.control.CheckBox
@@ -91,6 +89,8 @@ classdef AppV1 < matlab.apps.AppBase
                 app.ElutionDurationLabel.Text = 'Elution Volume';
                 app.ElutionDurationLabelUnits.Text = 'mL';
 
+                app.compoundList.ColumnName(4) = {'Elution Volume (mL)'};
+
                 app.ExtrusionDurationLabel.Text = 'Extrusion Volume';
                 app.ExtrusionDurationLabelUnits.Text = 'mL';
 
@@ -119,6 +119,8 @@ classdef AppV1 < matlab.apps.AppBase
             elseif string(app.VolumeTimeSwitch.Value) == 'Time'
                 app.ElutionDurationLabel.Text = 'Elution Duration';
                 app.ElutionDurationLabelUnits.Text = 'min';
+
+                app.compoundList.ColumnName(4) = {'Retention Time (min)'};
                 
                 app.ExtrusionDurationLabel.Text = 'Extrusion Duration';
                 app.ExtrusionDurationLabelUnits.Text = 'min';
@@ -233,7 +235,7 @@ classdef AppV1 < matlab.apps.AppBase
         end
 
 
-        function [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime] = computeValues(app)
+        function [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime deadVolume] = computeValues(app)
             F = app.FlowRate.Value;
             if string(app.StationaryPhaseSwitch.Value) == 'Set Value'
                 Sf = app.StationaryPhaseRetention.Value;
@@ -246,6 +248,11 @@ classdef AppV1 < matlab.apps.AppBase
             C0 = cell2mat(app.compoundList.Data(:,3));
             Vinj = app.InjectionVolume.Value;
             elutionTime = app.ElutionDuration.Value;
+            deadVolume = app.ColumnDeadVolume.Value;
+
+            if app.includeInjectionVolCheckbox.Value
+                deadVolume = deadVolume + Vinj;
+            end
 
             Vcup = Vc/Ncup;
             Vmcup = Vcup*(1-Sf);
@@ -259,9 +266,9 @@ classdef AppV1 < matlab.apps.AppBase
             end
         end
 
-        function addPuritiesToTable(app, Purity)
-            for i = 1:length(Purity)
-                app.compoundList.Data(i,4) = {Purity(i)};
+        function addRetentionElutionToTable(app, peakPosition)
+            for i = 1:length(peakPosition)
+                app.compoundList.Data(i,4) = {peakPosition(i)};
             end
         end
 
@@ -272,13 +279,13 @@ classdef AppV1 < matlab.apps.AppBase
             for i = 1:height(compoundNames)
                 [peakHeights(i), peakPositions(i)] = max(Cout(:,i));
                 peakHeights(i) = peakHeights(i)+(maxHeight*.05);
-                peakPositions(i) = telute(peakPositions(i));
+                peakPositions(i) = round(telute(peakPositions(i)), 2);
             end
         end
 
 
        function CUPPrediction(app)
-            [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime] = computeValues(app);
+            [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime deadVolume] = computeValues(app);
 
             [Vspan Cout X Y] = CupV6(Sf, KD, Vc, Ncup, Vcm, C0, Vinj);
             
@@ -295,6 +302,7 @@ classdef AppV1 < matlab.apps.AppBase
             end
             
             if contains(identifier, 'Classic')
+                telute = telute + deadVolume;
                 plot(app.UIAxesClassic, telute, Cout, 'linewidth', 2.0);
 
                 [compoundNames, peakPositions, peakHeights, maxHeight] = app.addLabelsToPeaks(telute, Cout);
@@ -309,6 +317,9 @@ classdef AppV1 < matlab.apps.AppBase
             
             if contains(identifier, 'Extrusion')
                 [Vspan, Cout, Xtot, Ytot, Vbc] = EECCC_V8(KD, Vc, Sf, X, Y);
+
+                Vspan = Vspan + deadVolume;
+                Vbc = Vbc + deadVolume;
                 
                 if string(app.VolumeTimeSwitch.Value) == 'Volume'
                     F = 1;
@@ -328,14 +339,13 @@ classdef AppV1 < matlab.apps.AppBase
                         LinesLabelsUnits = ' mL';
                     end
                     sweepStartLabel = sprintf(['Sweep Start\n']) + string(elutionTime) + LinesLabelsUnits;
-                    sweepEndLabel = sprintf(['Sweep End\n']) + string(round(sweepTime, 2)) + LinesLabelsUnits;
+                    sweepEndLabel = sprintf(['Extrusion Start\n']) + string(round(sweepTime, 2)) + LinesLabelsUnits;
                 end
                 
                 plot(app.UIAxesExtrusion, telute, Cout, 'linewidth', 2.0);
                 
                 if app.ExtrusionLinesCheckbox.Value
-                    xline(app.UIAxesExtrusion, elutionTime, '-.r', sweepStartLabel);
-                    xline(app.UIAxesExtrusion, columnVolumeExtrudedTime, '-.r');
+                    xline(app.UIAxesExtrusion, columnVolumeExtrudedTime, '-.r', sweepStartLabel);
                     xline(app.UIAxesExtrusion, sweepTime, '--b', sweepEndLabel);
                 end
 
@@ -352,14 +362,16 @@ classdef AppV1 < matlab.apps.AppBase
             
             if contains(identifier, 'Dual')
                 Vdm = app.DualDuration.Value;
-                dualTime = elutionTime + Vdm;
+                dualTime = elutionTime + Vdm + deadVolume;
                 
                 if string(app.VolumeTimeSwitch.Value) == 'Time'
                     Vdm = Vdm*F;
-                    dualTime = elutionTime*F + Vdm;
+                    dualTime = elutionTime*F + Vdm + deadVolume;
                 end
                 
                 [Vspan Cout, X, Y] = DualV2(KD, Vc, Sf, F, Vdm, X, Y);
+
+                Vspan = Vspan + deadVolume;
                 
                 if string(app.VolumeTimeSwitch.Value) == 'Volume'
                     F = 1;
@@ -372,7 +384,7 @@ classdef AppV1 < matlab.apps.AppBase
                     if string(app.VolumeTimeSwitch.Value) == 'Volume'
                         LinesLabelsUnits = ' mL';
                     end
-                    dualSwitchLabel = string(round(Vcm/F, 2)) + LinesLabelsUnits;
+                    dualSwitchLabel = string(round((Vcm+deadVolume)/F, 2)) + LinesLabelsUnits;
                 end
                 
                 telute = Vspan/F;
@@ -382,7 +394,7 @@ classdef AppV1 < matlab.apps.AppBase
                 
                 
                 if app.DualLinesCheckbox.Value
-                    xline(app.UIAxesDual, Vcm/F, '-.r', dualSwitchLabel);
+                    xline(app.UIAxesDual, (Vcm+deadVolume)/F, '-.r', dualSwitchLabel);
                     xline(app.UIAxesDual, stationaryPhaseVolume, '--b');
                 end
 
@@ -403,11 +415,15 @@ classdef AppV1 < matlab.apps.AppBase
                 
                 Vcm = [Vcm; cell2mat(app.SwitchTimeList.Data(:,2))*F];
                 
-                [Vtot, Ctot, Xtot, Ytot, Tcut, VswDM, VswCM] = MDMV2(Sf, KD, Vc, Ncup, C0, Vinj, Vcm);
+                [Vspan, Cout, Xtot, Ytot, Tcut, VswDM, VswCM] = MDMV2(Sf, KD, Vc, Ncup, C0, Vinj, Vcm);
                 %[Vx Vy] = MDMrT(Sf, KD, Vc, F, Vcm);
+
+                telute = Vspan + deadVolume;
+                VswCM = VswCM+deadVolume;
+                VswDM = VswDM+deadVolume;
                 
                 if string(app.VolumeTimeSwitch.Value) == 'Time'
-                    Vtot = Vtot/F;
+                    telute = telute/F;
                     VswCM = VswCM/F;
                     VswDM = VswDM/F;
                 end
@@ -424,11 +440,11 @@ classdef AppV1 < matlab.apps.AppBase
                     VswDMText = string(round(VswDM, 2)) + LinesLabelsUnits;
                 end
                 
-                plot(app.UIAxesMulti, Vtot, Ctot, 'linewidth', 2.0);
+                plot(app.UIAxesMulti, telute, Cout, 'linewidth', 2.0);
 
-                [compoundNames, peakPositions, peakHeights, maxHeight] = app.addLabelsToPeaks(Vtot, Ctot);
+                [compoundNames, peakPositions, peakHeights, maxHeight] = app.addLabelsToPeaks(telute, Cout);
                 
-                app.UIAxesMulti.XLim = [0 Vtot(end)];
+                app.UIAxesMulti.XLim = [0 telute(end)];
                 app.UIAxesMulti.YLim = [0 maxHeight*1.1];
                 
                 xMatrix = sum(Xtot, 3);
@@ -436,7 +452,7 @@ classdef AppV1 < matlab.apps.AppBase
                 
                 contourSpacing = linspace(0.005, .1, 30);
                 
-                contourf(app.UIAxesMultiPosition, Vtot, yAxis, xMatrix, contourSpacing, 'linecolor', 'none');
+                contourf(app.UIAxesMultiPosition, telute, yAxis, xMatrix, contourSpacing, 'linecolor', 'none');
                 
                 if app.MultiLinesCheckbox.Value
                     xline(app.UIAxesMulti, VswDM, '-.r', VswDMText);
@@ -449,11 +465,8 @@ classdef AppV1 < matlab.apps.AppBase
                     text(app.UIAxesMulti, peakPositions, peakHeights, compoundNames, 'HorizontalAlignment', 'center');
                 end
                 
-                app.UIAxesMultiPosition.XLim = [0 Vtot(end)];
+                app.UIAxesMultiPosition.XLim = [0 telute(end)];
                 app.UIAxesMultiPosition.YLim = [0 1];
-                
-                telute = Vtot;
-                Cout = Ctot;
                 
             end
             
@@ -465,14 +478,15 @@ classdef AppV1 < matlab.apps.AppBase
                 individualCurves = array2table(Cout.', 'VariableNames', app.compoundList.Data(:,1));
                 compiledData = [array2table(telute.'), individualCurves];
 
+                filename = string(inputdlg('Title for exported files?', 'Export', [1 50], filename));
+
                 writetable(compiledData, [filename + '.xlsx']);
 
                 exportedPlot = sprintf('app.UIAxes' + ExportIdentifier)
                 exportgraphics(eval(exportedPlot), [filename + '.pdf'], 'ContentType', 'vector');
             end
 
-            %[Purity, integralRanges] = purityCalculation(telute, Cout);
-            %app.addPuritiesToTable(Purity);
+            app.addRetentionElutionToTable(peakPositions);
 
         end
     end
@@ -614,11 +628,17 @@ classdef AppV1 < matlab.apps.AppBase
             app.ColumnDeadVolume = uieditfield(app.UIFigure, 'numeric');
             app.ColumnDeadVolume.Limits = [0 Inf];
             app.ColumnDeadVolume.Position = [628 334 44 22];
+
+            %Create includeInjectionVolCheckbox
+            app.includeInjectionVolCheckbox = uicheckbox(app.UIFigure,...
+                'Text', 'Include Inj. Vol.?',...
+                'Value', 1,...
+                'Position', [560 305 120 15]);
             
             % Create UITable
             initialRows = {'Compound 1' 1 1 0; 'Compound 2' 2 1 0};
             app.compoundList = uitable(app.UIFigure, ...
-                "ColumnName",{'Compound'; 'KD'; 'Conc. (g/L)'; 'Purity (%)'}, ...
+                "ColumnName",{'Compound'; 'KD'; 'Conc. (g/L)'; 'Retention Time (min)'}, ...
                 "ColumnFormat",{'char' [] [] []}, ...
                 "Data",initialRows);
             app.compoundList.RowName = {};
@@ -671,7 +691,7 @@ classdef AppV1 < matlab.apps.AppBase
             xlabel(app.UIAxesClassic, 'Elution Time')
             ylabel(app.UIAxesClassic, 'Concentration')
             zlabel(app.UIAxesClassic, 'Z')
-            app.UIAxesClassic.Position = [8 143 695 301];
+            app.UIAxesClassic.Position = [8 10 695 430];
 
             % Create PlotButtonClassic
             app.PlotButtonClassic = uibutton(app.ClassicElutionTab, 'ButtonPushedFcn',@(src,event) CUPPrediction(app));
@@ -701,7 +721,7 @@ classdef AppV1 < matlab.apps.AppBase
             xlabel(app.UIAxesExtrusion, 'Elution Time')
             ylabel(app.UIAxesExtrusion, 'Concentration')
             zlabel(app.UIAxesExtrusion, 'Z')
-            app.UIAxesExtrusion.Position = [8 143 695 301];
+            app.UIAxesExtrusion.Position = [8 10 695 430];
 
             % Create PlotButton_3
             app.PlotButtonExtrusion = uibutton(app.ElutionExtrusionTab, 'ButtonPushedFcn',@(src,event) CUPPrediction(app));
@@ -759,7 +779,7 @@ classdef AppV1 < matlab.apps.AppBase
             xlabel(app.UIAxesDual, 'Elution Time')
             ylabel(app.UIAxesDual, 'Concentration')
             zlabel(app.UIAxesDual, 'Z')
-            app.UIAxesDual.Position = [8 143 695 301];
+            app.UIAxesDual.Position = [8 10 695 430];
 
             % Create PlotButton_3
             app.PlotButtonDual = uibutton(app.dualModeTab, 'ButtonPushedFcn',@(src,event) CUPPrediction(app));
@@ -789,24 +809,6 @@ classdef AppV1 < matlab.apps.AppBase
             app.DualDurationLabelUnits.Position = [200 445 29 22];
             app.DualDurationLabelUnits.Text = 'min';
 
-            % Create yield and purity table for classic mode
-            app.yieldAndPurityClassic = uitable(app.ClassicElutionTab);
-            app.yieldAndPurityClassic.ColumnName = {'Compound'; 'Start'; 'End'; 'Yield'; 'Purity'};
-            app.yieldAndPurityClassic.RowName = {};
-            app.yieldAndPurityClassic.Position = [49 12 647 122];
-            
-            % Create yield and purity table for Elution Extrusion
-            app.yieldAndPurityExtrusion = uitable(app.ElutionExtrusionTab);
-            app.yieldAndPurityExtrusion.ColumnName = {'Compound'; 'Start'; 'End'; 'Yield'; 'Purity'};
-            app.yieldAndPurityExtrusion.RowName = {};
-            app.yieldAndPurityExtrusion.Position = [49 12 647 122];
-
-            % Create yield and purity table for Dual Mode
-            app.yieldAndPurityDual = uitable(app.dualModeTab);
-            app.yieldAndPurityDual.ColumnName = {'Compound'; 'Start'; 'End'; 'Yield'; 'Purity'};
-            app.yieldAndPurityDual.RowName = {};
-            app.yieldAndPurityDual.Position = [49 12 647 122];
-
             %Create DualPeaksCheckbox
             app.DualPeaksCheckbox = uicheckbox(app.dualModeTab,...
                 'Text', 'Peak Labels?',...
@@ -835,7 +837,7 @@ classdef AppV1 < matlab.apps.AppBase
             xlabel(app.UIAxesMulti, 'Elution Time')
             ylabel(app.UIAxesMulti, 'Concentration')
             zlabel(app.UIAxesMulti, 'Z')
-            app.UIAxesMulti.Position = [8 229 695 215];
+            app.UIAxesMulti.Position = [8 230 695 210];
 
             % Create UIAxesMultiPosition
             app.UIAxesMultiPosition = uiaxes(app.MultipleDualModeTab);
