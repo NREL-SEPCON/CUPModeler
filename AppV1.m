@@ -14,6 +14,10 @@ classdef AppV1 < matlab.apps.AppBase
         yieldAndPurityClassic         matlab.ui.control.Table
         yieldAndPurityExtrusion       matlab.ui.control.Table
         yieldAndPurityDual            matlab.ui.control.Table
+        ClassicPeaksCheckbox          matlab.ui.control.CheckBox
+        ExtrusionPeaksCheckbox        matlab.ui.control.CheckBox
+        DualPeaksCheckbox             matlab.ui.control.CheckBox
+        MultiPeaksCheckbox            matlab.ui.control.CheckBox
         ExtrusionLinesCheckbox        matlab.ui.control.CheckBox
         ExtrusionLinesLabelsCheckbox  matlab.ui.control.CheckBox
         DualLinesCheckbox             matlab.ui.control.CheckBox
@@ -261,6 +265,17 @@ classdef AppV1 < matlab.apps.AppBase
             end
         end
 
+        function [compoundNames, peakPositions, peakHeights, maxHeight] = addLabelsToPeaks(app, telute, Cout)
+            compoundNames = cellstr(app.compoundList.Data(:,1));
+            Cout = Cout';
+            maxHeight = max(max(Cout));
+            for i = 1:height(compoundNames)
+                [peakHeights(i), peakPositions(i)] = max(Cout(:,i));
+                peakHeights(i) = peakHeights(i)+(maxHeight*.05);
+                peakPositions(i) = telute(peakPositions(i));
+            end
+        end
+
 
        function CUPPrediction(app)
             [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime] = computeValues(app);
@@ -269,21 +284,32 @@ classdef AppV1 < matlab.apps.AppBase
             
             Nturn = Vspan/Vmcup;
             telute = (dtElution).*Nturn;
-
+            
             identifier = string(gcbo().Tag);
-
+            
             if identifier == 'Switch'
                 identifier = string(app.TabGroup.SelectedTab.Tag);
+                if contains(identifier, 'Info')
+                    identifier = 'ClassicExtrusionDualMulti';
+                end
             end
-
+            
             if contains(identifier, 'Classic')
                 plot(app.UIAxesClassic, telute, Cout, 'linewidth', 2.0);
+
+                [compoundNames, peakPositions, peakHeights, maxHeight] = app.addLabelsToPeaks(telute, Cout);
+
+                if app.ClassicPeaksCheckbox.Value
+                    text(app.UIAxesClassic, peakPositions, peakHeights, compoundNames, 'HorizontalAlignment', 'center');
+                end
+
                 app.UIAxesClassic.XLim = [0 elutionTime];
+                app.UIAxesClassic.YLim = [0 maxHeight*1.1];
             end
             
             if contains(identifier, 'Extrusion')
                 [Vspan, Cout, Xtot, Ytot, Vbc] = EECCC_V8(KD, Vc, Sf, X, Y);
-
+                
                 if string(app.VolumeTimeSwitch.Value) == 'Volume'
                     F = 1;
                 end
@@ -292,10 +318,10 @@ classdef AppV1 < matlab.apps.AppBase
                 columnVolumeExtrudedTime = Vbc(1)/F;
                 sweepTime = Vbc(2)/F;
                 extrusionTime = app.ExtrusionDuration.Value + elutionTime;
-
+                
                 sweepStartLabel = '';
                 sweepEndLabel = '';
-
+                
                 if app.ExtrusionLinesLabelsCheckbox.Value
                     LinesLabelsUnits = ' min';
                     if string(app.VolumeTimeSwitch.Value) == 'Volume'
@@ -304,22 +330,30 @@ classdef AppV1 < matlab.apps.AppBase
                     sweepStartLabel = sprintf(['Sweep Start\n']) + string(elutionTime) + LinesLabelsUnits;
                     sweepEndLabel = sprintf(['Sweep End\n']) + string(round(sweepTime, 2)) + LinesLabelsUnits;
                 end
-
+                
                 plot(app.UIAxesExtrusion, telute, Cout, 'linewidth', 2.0);
-
+                
                 if app.ExtrusionLinesCheckbox.Value
                     xline(app.UIAxesExtrusion, elutionTime, '-.r', sweepStartLabel);
                     xline(app.UIAxesExtrusion, columnVolumeExtrudedTime, '-.r');
                     xline(app.UIAxesExtrusion, sweepTime, '--b', sweepEndLabel);
                 end
 
+                [compoundNames, peakPositions, peakHeights, maxHeight] = app.addLabelsToPeaks(telute, Cout);
+
+                if app.ExtrusionPeaksCheckbox.Value
+                    text(app.UIAxesExtrusion, peakPositions, peakHeights, compoundNames, 'HorizontalAlignment', 'center');
+                end
+
                 app.UIAxesExtrusion.XLim = [0 extrusionTime];
+                app.UIAxesExtrusion.YLim = [0 maxHeight*1.1];
+
             end
             
             if contains(identifier, 'Dual')
                 Vdm = app.DualDuration.Value;
                 dualTime = elutionTime + Vdm;
-  
+                
                 if string(app.VolumeTimeSwitch.Value) == 'Time'
                     Vdm = Vdm*F;
                     dualTime = elutionTime*F + Vdm;
@@ -340,36 +374,44 @@ classdef AppV1 < matlab.apps.AppBase
                     end
                     dualSwitchLabel = string(round(Vcm/F, 2)) + LinesLabelsUnits;
                 end
-
+                
                 telute = Vspan/F;
                 stationaryPhaseVolume = dualTime/F;
-
+                
                 plot(app.UIAxesDual, telute, Cout, 'linewidth', 2.0);
-
+                
+                
                 if app.DualLinesCheckbox.Value
                     xline(app.UIAxesDual, Vcm/F, '-.r', dualSwitchLabel);
                     xline(app.UIAxesDual, stationaryPhaseVolume, '--b');
                 end
 
-                app.UIAxesDual.XLim = [0 stationaryPhaseVolume];
-            end
+                [compoundNames, peakPositions, peakHeights, maxHeight] = app.addLabelsToPeaks(telute, Cout);
+               
+                if app.DualPeaksCheckbox.Value
+                    text(app.UIAxesDual, peakPositions, peakHeights, compoundNames, 'HorizontalAlignment', 'center');
+                end
 
+                app.UIAxesDual.XLim = [0 stationaryPhaseVolume];
+                app.UIAxesDual.YLim = [0 maxHeight*1.1];
+            end
+            
             if contains(identifier, 'Multi')
                 if string(app.VolumeTimeSwitch.Value) == 'Volume'
                     F = 1;
                 end
-
+                
                 Vcm = [Vcm; cell2mat(app.SwitchTimeList.Data(:,2))*F];
-
+                
                 [Vtot, Ctot, Xtot, Ytot, Tcut, VswDM, VswCM] = MDMV2(Sf, KD, Vc, Ncup, C0, Vinj, Vcm);
                 %[Vx Vy] = MDMrT(Sf, KD, Vc, F, Vcm);
-
+                
                 if string(app.VolumeTimeSwitch.Value) == 'Time'
                     Vtot = Vtot/F;
                     VswCM = VswCM/F;
                     VswDM = VswDM/F;
                 end
-
+                
                 VswCMText = '';
                 VswDMText = '';
                 
@@ -381,11 +423,13 @@ classdef AppV1 < matlab.apps.AppBase
                     VswCMText = string(round(VswCM, 2)) + LinesLabelsUnits;
                     VswDMText = string(round(VswDM, 2)) + LinesLabelsUnits;
                 end
-
+                
                 plot(app.UIAxesMulti, Vtot, Ctot, 'linewidth', 2.0);
+
+                [compoundNames, peakPositions, peakHeights, maxHeight] = app.addLabelsToPeaks(Vtot, Ctot);
                 
                 app.UIAxesMulti.XLim = [0 Vtot(end)];
-                app.UIAxesMulti.YLim = [0 Inf];
+                app.UIAxesMulti.YLim = [0 maxHeight*1.1];
                 
                 xMatrix = sum(Xtot, 3);
                 yAxis = [1:size(xMatrix,1)].*(1/size(xMatrix,1));
@@ -401,18 +445,22 @@ classdef AppV1 < matlab.apps.AppBase
                     xline(app.UIAxesMultiPosition, VswCM, '-.b', VswCMText);
                 end
 
+                if app.MultiPeaksCheckbox.Value
+                    text(app.UIAxesMulti, peakPositions, peakHeights, compoundNames, 'HorizontalAlignment', 'center');
+                end
+                
                 app.UIAxesMultiPosition.XLim = [0 Vtot(end)];
                 app.UIAxesMultiPosition.YLim = [0 1];
-
+                
                 telute = Vtot;
                 Cout = Ctot;
-
+                
             end
-
-
+            
+            
             if contains(identifier, 'Export')
                 ExportIdentifier = erase(identifier, 'Export');
-
+                
                 filename = [ExportIdentifier + ' ' + app.VolumeTimeSwitch.Value + ' export ' + string(datetime)];
                 individualCurves = array2table(Cout.', 'VariableNames', app.compoundList.Data(:,1));
                 compiledData = [array2table(telute.'), individualCurves];
@@ -637,6 +685,12 @@ classdef AppV1 < matlab.apps.AppBase
             app.ExportButtonClassic.Text = 'Export';
             app.ExportButtonClassic.Tag = 'ClassicExport';
 
+            %Create ClassicPeaksCheckbox
+            app.ClassicPeaksCheckbox = uicheckbox(app.ClassicElutionTab,...
+                'Text', 'Peak Labels?',...
+                'Value', 1,...
+                'Position', [460 450 102 15]);
+
             % Create ElutionExtrusionTab
             app.ElutionExtrusionTab = uitab(app.TabGroup);
             app.ElutionExtrusionTab.Title = 'Elution-Extrusion';
@@ -677,18 +731,23 @@ classdef AppV1 < matlab.apps.AppBase
             app.ExtrusionDurationLabelUnits.Position = [200 445 29 22];
             app.ExtrusionDurationLabelUnits.Text = 'min';
 
+            %Create ExtrusionPeaksCheckbox
+            app.ExtrusionPeaksCheckbox = uicheckbox(app.ElutionExtrusionTab,...
+                'Text', 'Peak Labels?',...
+                'Value', 1,...
+                'Position', [460 450 102 15]);
 
             %Create ExtrusionLinesCheckbox
             app.ExtrusionLinesCheckbox = uicheckbox(app.ElutionExtrusionTab,...
                 'Text', 'Lines?',...
                 'Value', 1,...
-                'Position', [550 450 102 15]);
+                'Position', [560 450 102 15]);
 
             %Create ExtrusionLinesLabelsCheckbox
             app.ExtrusionLinesLabelsCheckbox = uicheckbox(app.ElutionExtrusionTab,...
                 'Text', 'Labels?',...
                 'Value', 1,...
-                'Position', [610 450 102 15]);
+                'Position', [620 450 102 15]);
 
             % Create dualModeTab
             app.dualModeTab = uitab(app.TabGroup);
@@ -748,17 +807,23 @@ classdef AppV1 < matlab.apps.AppBase
             app.yieldAndPurityDual.RowName = {};
             app.yieldAndPurityDual.Position = [49 12 647 122];
 
+            %Create DualPeaksCheckbox
+            app.DualPeaksCheckbox = uicheckbox(app.dualModeTab,...
+                'Text', 'Peak Labels?',...
+                'Value', 1,...
+                'Position', [460 450 102 15]);
+
             %Create DualLinesCheckbox
             app.DualLinesCheckbox = uicheckbox(app.dualModeTab,...
                 'Text', 'Lines?',...
                 'Value', 1,...
-                'Position', [550 450 102 15]);
+                'Position', [560 450 102 15]);
 
             %Create DualLinesLabelsCheckbox
             app.DualLinesLabelsCheckbox = uicheckbox(app.dualModeTab,...
                 'Text', 'Labels?',...
                 'Value', 1,...
-                'Position', [610 450 102 15]);
+                'Position', [620 450 102 15]);
 
             % Create MultipleDualModeTab
             app.MultipleDualModeTab = uitab(app.TabGroup);
@@ -822,27 +887,35 @@ classdef AppV1 < matlab.apps.AppBase
             app.removeCycle.Position = [11 109 25 25];
             app.removeCycle.Text = '-';
 
-            % Create appInfoTab
-            app.Info = uitab(app.TabGroup);
-            app.Info.Title = 'App Info';
+
+            %Create MultiPeaksCheckbox
+            app.MultiPeaksCheckbox = uicheckbox(app.MultipleDualModeTab,...
+                'Text', 'Peak Labels?',...
+                'Value', 1,...
+                'Position', [460 450 102 15]);
 
             %Create MultiLinesCheckbox
             app.MultiLinesCheckbox = uicheckbox(app.MultipleDualModeTab,...
                 'Text', 'Lines?',...
                 'Value', 1,...
-                'Position', [550 450 102 15]);
+                'Position', [560 450 102 15]);
 
             %Create MultiLinesLabelsCheckbox
             app.MultiLinesLabelsCheckbox = uicheckbox(app.MultipleDualModeTab,...
                 'Text', 'Labels?',...
                 'Value', 1,...
-                'Position', [610 450 102 15]);
+                'Position', [620 450 102 15]);
+
+            % Create appInfoTab
+            app.Info = uitab(app.TabGroup);
+            app.Info.Title = 'App Info';
+            app.Info.Tag = 'Info';
 
             % Create ColumnEfficiencyNLabel
             app.ColumnEfficiencyNLabel = uilabel(app.Info);
             app.ColumnEfficiencyNLabel.HorizontalAlignment = 'center';
             app.ColumnEfficiencyNLabel.WordWrap = 'on';
-            app.ColumnEfficiencyNLabel.Position = [73 501 91 28];
+            app.ColumnEfficiencyNLabel.Position = [33 501 91 28];
             app.ColumnEfficiencyNLabel.Text = 'Column Efficiency (N)';
             
             % Create ColumnEfficiencyN
