@@ -12,6 +12,10 @@ classdef AppV1 < matlab.apps.AppBase
         StationaryPhaseSwitch         matlab.ui.control.Switch
         removeCompound                matlab.ui.control.Button
         addCompound                   matlab.ui.control.Button
+        saveCompoundList              matlab.ui.control.Button
+        openCompoundList              matlab.ui.control.Button
+        saveSwitchTimes               matlab.ui.control.Button
+        openSwitchTimes               matlab.ui.control.Button
         compoundList                  matlab.ui.control.Table
         includeInjectionVolCheckbox   matlab.ui.control.CheckBox
         ClassicPeaksCheckbox          matlab.ui.control.CheckBox
@@ -221,6 +225,36 @@ classdef AppV1 < matlab.apps.AppBase
             if height(app.compoundList.Data) > 1
             app.compoundList.Data(end,:) = []; % Delete Last Row
             end
+        end
+
+
+        function saveCompounds(app)
+            filename = ['Compound List ' + string(datetime) + '.xls'];
+            [filename] = uiputfile('.xls', 'Save compound list', filename);
+            compoundTableContents = get(app.compoundList, 'Data');
+            writecell(compoundTableContents, filename);
+        end
+
+
+        function openCompounds(app)
+            [filename] = uigetfile('.xls');
+            importedTable = array2table(readcell(filename));
+            app.compoundList.Data = table2cell(importedTable);
+        end
+
+
+        function saveSwitchTimeList(app)
+            filename = ['Switching Times ' + string(datetime) + '.xls'];
+            [filename] = uiputfile('.xls', 'Save switch time list', filename);
+            switchTimeTableContents = get(app.SwitchTimeList, 'Data');
+            writecell(switchTimeTableContents, filename);
+        end
+
+
+        function openSwitchTimeList(app)
+            [filename] = uigetfile('.xls');
+            importedTable = array2table(readcell(filename));
+            app.SwitchTimeList.Data = table2cell(importedTable);
         end
 
 
@@ -663,6 +697,16 @@ classdef AppV1 < matlab.apps.AppBase
             app.removeCompound.Position = [26 209 25 25];
             app.removeCompound.Text = '-';
 
+            % Create saveCompoundList
+            app.saveCompoundList = uibutton(app.UIFigure,'ButtonPushedFcn',@(src,event) saveCompounds(app));
+            app.saveCompoundList.Position = [17 140 40 25];
+            app.saveCompoundList.Text = 'Save';
+
+            % Create openCompoundList
+            app.openCompoundList = uibutton(app.UIFigure,'ButtonPushedFcn',@(src,event) openCompounds(app));
+            app.openCompoundList.Position = [17 107 40 25];
+            app.openCompoundList.Text = 'Open';
+
             % Create CompoundListLabel
             app.CompoundListLabel = uilabel(app.UIFigure);
             app.CompoundListLabel.HorizontalAlignment = 'center';
@@ -893,6 +937,16 @@ classdef AppV1 < matlab.apps.AppBase
             app.removeCycle = uibutton(app.MultipleDualModeTab,'ButtonPushedFcn',@(src,event) removeCycleButtonPushed(app));
             app.removeCycle.Position = [11 109 25 25];
             app.removeCycle.Text = '-';
+
+            % Create saveSwitchTimes
+            app.saveSwitchTimes = uibutton(app.MultipleDualModeTab,'ButtonPushedFcn',@(src,event) saveSwitchTimeList(app));
+            app.saveSwitchTimes.Position = [11 62 25 25];
+            app.saveSwitchTimes.Text = 'S';
+
+            % Create openSwitchTimes
+            app.openSwitchTimes = uibutton(app.MultipleDualModeTab,'ButtonPushedFcn',@(src,event) openSwitchTimeList(app));
+            app.openSwitchTimes.Position = [11 29 25 25];
+            app.openSwitchTimes.Text = 'O';
 
 
             %Create MultiPeaksCheckbox
