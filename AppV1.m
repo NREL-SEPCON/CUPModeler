@@ -6,7 +6,9 @@ classdef AppV1 < matlab.apps.AppBase
         TabGroup                      matlab.ui.container.TabGroup
         ColumnPropertiesLabel         matlab.ui.control.Label
         CompoundListLabel             matlab.ui.control.Label
-        VolumeTimeSwitch              matlab.ui.control.Switch  
+        VolumeTimeSwitch              matlab.ui.control.Switch
+        AscDescLabel                  matlab.ui.control.Label
+        AscDesc                       matlab.ui.control.Switch
         StationaryPhaseSwitch         matlab.ui.control.Switch
         removeCompound                matlab.ui.control.Button
         addCompound                   matlab.ui.control.Button
@@ -243,6 +245,9 @@ classdef AppV1 < matlab.apps.AppBase
                 Sf = app.SfCoefficientA.Value - app.SfCoefficientB.Value*F;
             end
             KD = cell2mat(app.compoundList.Data(:,2));
+            if app.AscDesc.Value == 'Upper'
+                KD = 1./KD;
+            end
             Vc = app.ColumnVolume.Value;
             Ncup = app.ColumnEfficiencyN.Value;
             C0 = cell2mat(app.compoundList.Data(:,3));
@@ -951,6 +956,21 @@ classdef AppV1 < matlab.apps.AppBase
             app.InfoCredits.FontSize = 12;
             app.InfoCredits.Position = [140 250 500 50];
             app.InfoCredits.Text = 'Mathematical Modeling by Hoon Choi, Interface by Manar Alherech';
+
+            app.AscDescLabel = uilabel(app.UIFigure);
+            app.AscDescLabel.HorizontalAlignment = 'center';
+            app.AscDescLabel.FontSize = 12;
+            app.AscDescLabel.Position = [667 190 50 50];
+            app.AscDescLabel.Text = 'Mobile Phase';
+            app.AscDescLabel.WordWrap = 'on';
+
+            % Create Switch
+            app.AscDesc = uiswitch(app.UIFigure, 'slider', 'ValueChangedFcn',@(src,event) CUPPrediction(app));
+            app.AscDesc.Items = {'Lower', 'Upper'};
+            app.AscDesc.Position = [680 120 45 20];
+            app.AscDesc.Orientation = 'vertical';
+            app.AscDesc.Value = 'Lower';
+            app.AscDesc.Tag = 'Switch';
             
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
