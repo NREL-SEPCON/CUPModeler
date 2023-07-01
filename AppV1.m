@@ -78,9 +78,14 @@ classdef AppV1 < matlab.apps.AppBase
         addCycle                      matlab.ui.control.Button
         UIAxesMultiPosition           matlab.ui.control.UIAxes
         UIAxesMulti                   matlab.ui.control.UIAxes
+        FitTab                        matlab.ui.container.Tab
+        ImportTraceButton             matlab.ui.control.Button
+        FindPeaksButton               matlab.ui.control.Button
+        ComputeKDValues               matlab.ui.control.Button
         Info                          matlab.ui.container.Tab
         InfoTitle                     matlab.ui.control.Label
         InfoVersion                   matlab.ui.control.Label
+        UIAxesFit                     matlab.ui.control.UIAxes
         InfoCitation                  matlab.ui.control.Label
         InfoCredits                   matlab.ui.control.Label
     end
@@ -268,6 +273,68 @@ classdef AppV1 < matlab.apps.AppBase
 
         function removeCycleButtonPushed(app)
             app.SwitchTimeList.Data(end,:) = []; % Delete Last Row
+        end
+
+        function importTrace(app)
+            [file,filepath,filter] = uigetfile('.xlsx', '.xls');
+            filename = fullfile(filepath,file);
+
+            [importedData] = xlsread(filename)';
+
+            X = importedData(1,:);
+            Y = importedData(2,:);
+
+            guidata(app.UIAxesFit, [X,Y]);
+            plot(app.UIAxesFit, X, Y, 'linewidth', 2.0);
+        end
+
+        function findAndLabelPeaks(app)
+            plottedData = guidata(app.UIAxesFit);
+            dataMidpoint = length(guidata(app.UIAxesFit))/2;
+
+            X = plottedData(1:dataMidpoint);
+            Y = plottedData(dataMidpoint+1:end);
+
+            set(0,'DefaultFigureVisible','off');
+            findpeaks(Y, X, 'MinPeakProminence', 5);
+            set(0,'DefaultFigureVisible','on');
+            ax2 = gca;
+            children = findobj(ax2.Children, '-not', 'tag', 'Signal');
+            copyobj(children, app.UIAxesFit);
+            delete(ax2.Parent);
+        end
+        
+        function updateCompoundListWithFits(app)
+            F = app.FlowRate.Value;
+            Vm = (1-app.StationaryPhaseRetention.Value)*app.ColumnVolume.Value;
+            Vs = app.StationaryPhaseRetention.Value*app.ColumnVolume.Value;
+            Vd = app.ColumnDeadVolume.Value;
+            
+            plottedData = guidata(app.UIAxesFit);
+            dataMidpoint = length(guidata(app.UIAxesFit))/2;
+
+            X = plottedData(1:dataMidpoint);
+            Y = plottedData(dataMidpoint+1:end);
+
+            [pks,locs] = findpeaks(Y, 'MinPeakProminence',5);
+            retentionTimes = X(locs);
+
+            partitionCoefficients = ((F*retentionTimes)-Vm+Vd)/Vs;
+
+            for i = 1:height(app.compoundList.Data)
+                app.removeCompoundButtonPushed()
+            end
+
+            for i = 1:length(partitionCoefficients)
+                K = partitionCoefficients(i);
+                C = pks(i);
+                T = retentionTimes(i);
+
+                newRowPositionString = num2str(i);
+                compoundName = {char(append('Compound ',newRowPositionString))};
+
+                app.compoundList.Data(i,:) = [compoundName,K,C,T];
+            end
         end
 
 
@@ -842,7 +909,7 @@ classdef AppV1 < matlab.apps.AppBase
             app.ExportButtonDual.Text = 'Export';
             app.ExportButtonDual.Tag = 'DualExport';
 
-            % Create 
+            % Create DualDurationLabel
             app.DualDurationLabel = uilabel(app.dualModeTab);
             app.DualDurationLabel.HorizontalAlignment = 'right';
             app.DualDurationLabel.Position = [40 445 120 22];
@@ -948,7 +1015,6 @@ classdef AppV1 < matlab.apps.AppBase
             app.openSwitchTimes.Position = [11 29 25 25];
             app.openSwitchTimes.Text = 'O';
 
-
             %Create MultiPeaksCheckbox
             app.MultiPeaksCheckbox = uicheckbox(app.MultipleDualModeTab,...
                 'Text', 'Peak Labels?',...
@@ -967,6 +1033,36 @@ classdef AppV1 < matlab.apps.AppBase
                 'Value', 1,...
                 'Position', [620 450 102 15]);
 
+            % Create FittingTab
+            app.FitTab = uitab(app.TabGroup);
+            app.FitTab.Title = 'Trace Fitting';
+            app.FitTab.Tag = 'Fit';
+
+            % Create UIAxesFit
+            app.UIAxesFit = uiaxes(app.FitTab);
+            xlabel(app.UIAxesFit, 'Elution Time')
+            ylabel(app.UIAxesFit, 'Concentration')
+            zlabel(app.UIAxesFit, 'Z')
+            app.UIAxesFit.Position = [8 10 695 430];
+
+            % Create ImportTraceButton
+            app.ImportTraceButton = uibutton(app.FitTab, 'ButtonPushedFcn',@(src,event) importTrace(app));
+            app.ImportTraceButton.Position = [240 445 68 23];
+            app.ImportTraceButton.Text = 'Import';
+            app.ImportTraceButton.Tag = 'ImportFit';
+
+            % Create FindPeaksButton
+            app.FindPeaksButton = uibutton(app.FitTab, 'ButtonPushedFcn',@(src,event) findAndLabelPeaks(app));
+            app.FindPeaksButton.Position = [315 445 68 23];
+            app.FindPeaksButton.Text = 'Find Peaks';
+            app.FindPeaksButton.Tag = 'FindFit';
+
+            % Create ComputeKDValues
+            app.ComputeKDValues = uibutton(app.FitTab, 'ButtonPushedFcn',@(src,event) updateCompoundListWithFits(app));
+            app.ComputeKDValues.Position = [390 445 68 23];
+            app.ComputeKDValues.Text = 'Send KDs';
+            app.ComputeKDValues.Tag = 'SendFit';
+            
             % Create appInfoTab
             app.Info = uitab(app.TabGroup);
             app.Info.Title = 'App Info';
