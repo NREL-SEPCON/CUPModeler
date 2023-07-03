@@ -80,8 +80,13 @@ classdef AppV1 < matlab.apps.AppBase
         UIAxesMulti                   matlab.ui.control.UIAxes
         FitTab                        matlab.ui.container.Tab
         ImportTraceButton             matlab.ui.control.Button
+        FitSpan                       matlab.ui.control.NumericEditField
+        FitSpanLabel                  matlab.ui.control.Label
+        FitProminence                 matlab.ui.control.NumericEditField
+        FitProminenceLabel            matlab.ui.control.Label
         FindPeaksButton               matlab.ui.control.Button
         ComputeKDValues               matlab.ui.control.Button
+        DisplayWithModeling           matlab.ui.control.CheckBox
         Info                          matlab.ui.container.Tab
         InfoTitle                     matlab.ui.control.Label
         InfoVersion                   matlab.ui.control.Label
@@ -272,7 +277,7 @@ classdef AppV1 < matlab.apps.AppBase
 
 
         function removeCycleButtonPushed(app)
-            app.SwitchTimeList.Data(end,:) = []; % Delete Last Row
+            app.SwitchTimeList.Data(end,:) = [];
         end
 
         function importTrace(app)
@@ -284,24 +289,33 @@ classdef AppV1 < matlab.apps.AppBase
             X = importedData(1,:);
             Y = importedData(2,:);
 
+            app.FitSpan.Limits = [2 length(Y)/2];
+            
             guidata(app.UIAxesFit, [X,Y]);
             plot(app.UIAxesFit, X, Y, 'linewidth', 2.0);
         end
-
+        
         function findAndLabelPeaks(app)
             plottedData = guidata(app.UIAxesFit);
             dataMidpoint = length(guidata(app.UIAxesFit))/2;
-
+            
             X = plottedData(1:dataMidpoint);
-            Y = plottedData(dataMidpoint+1:end);
-
+            Y = smooth(plottedData(dataMidpoint+1:end), app.FitSpan.Value);
+            
+            plot(app.UIAxesFit, X, Y, 'linewidth', 2.0);
+            
             set(0,'DefaultFigureVisible','off');
-            findpeaks(Y, X, 'MinPeakProminence', 5);
+            findpeaks(Y, X, 'MinPeakProminence', app.FitProminence.Value);
             set(0,'DefaultFigureVisible','on');
             ax2 = gca;
             children = findobj(ax2.Children, '-not', 'tag', 'Signal');
             copyobj(children, app.UIAxesFit);
             delete(ax2.Parent);
+            
+            %TODO: Add filter for rejecting peaks before solvent front
+            %TODO: Add threshold field to enable rejecting peaks below certain intensity
+            %TODO: Implement conversion of X-axis to volume for trace fit tab
+            %TODO: Figure out how to use resample() to plot the trace on model plots
         end
         
         function updateCompoundListWithFits(app)
@@ -312,11 +326,11 @@ classdef AppV1 < matlab.apps.AppBase
             
             plottedData = guidata(app.UIAxesFit);
             dataMidpoint = length(guidata(app.UIAxesFit))/2;
-
+            
             X = plottedData(1:dataMidpoint);
-            Y = plottedData(dataMidpoint+1:end);
+            Y = smooth(plottedData(dataMidpoint+1:end), app.FitSpan.Value);
 
-            [pks,locs] = findpeaks(Y, 'MinPeakProminence',5);
+            [pks,locs] = findpeaks(Y, 'MinPeakProminence', app.FitProminence.Value);
             retentionTimes = X(locs);
 
             partitionCoefficients = ((F*retentionTimes)-Vm+Vd)/Vs;
@@ -1047,9 +1061,33 @@ classdef AppV1 < matlab.apps.AppBase
 
             % Create ImportTraceButton
             app.ImportTraceButton = uibutton(app.FitTab, 'ButtonPushedFcn',@(src,event) importTrace(app));
-            app.ImportTraceButton.Position = [240 445 68 23];
+            app.ImportTraceButton.Position = [40 445 68 23];
             app.ImportTraceButton.Text = 'Import';
             app.ImportTraceButton.Tag = 'ImportFit';
+
+            % Create FitSpanLabel
+            app.FitSpanLabel = uilabel(app.FitTab);
+            app.FitSpanLabel.HorizontalAlignment = 'right';
+            app.FitSpanLabel.Position = [120 445 30 22];
+            app.FitSpanLabel.Text = 'Span';
+
+            % Create FitSpan
+            app.FitSpan = uieditfield(app.FitTab, 'numeric');
+            app.FitSpan.Position = [155 445 29 22];
+            app.FitSpan.Value = 20;
+            app.FitSpan.RoundFractionalValues = 1;
+            app.FitSpan.Limits = [2 1000];
+
+            % Create FitProminenceLabel
+            app.FitProminenceLabel = uilabel(app.FitTab);
+            app.FitProminenceLabel.HorizontalAlignment = 'right';
+            app.FitProminenceLabel.Position = [197 445 65 22];
+            app.FitProminenceLabel.Text = 'Prominence';
+
+            % Create FitProminence
+            app.FitProminence = uieditfield(app.FitTab, 'numeric');
+            app.FitProminence.Position = [267 445 29 22];
+            app.FitProminence.Value = 5;
 
             % Create FindPeaksButton
             app.FindPeaksButton = uibutton(app.FitTab, 'ButtonPushedFcn',@(src,event) findAndLabelPeaks(app));
@@ -1062,6 +1100,13 @@ classdef AppV1 < matlab.apps.AppBase
             app.ComputeKDValues.Position = [390 445 68 23];
             app.ComputeKDValues.Text = 'Send KDs';
             app.ComputeKDValues.Tag = 'SendFit';
+
+            %Create DisplayWithModelingCheckbox
+            app.DisplayWithModeling = uicheckbox(app.FitTab,...
+                'Text', 'Overlay Models?',...
+                'Value', 1,...
+                'Position', [480 449 110 15]);
+            set(app.DisplayWithModeling, 'Tooltip', 'Currently only displays on Classic or Elution-Extrusion models.')
             
             % Create appInfoTab
             app.Info = uitab(app.TabGroup);
