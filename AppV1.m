@@ -84,6 +84,8 @@ classdef AppV1 < matlab.apps.AppBase
         FitSpanLabel                  matlab.ui.control.Label
         FitProminence                 matlab.ui.control.NumericEditField
         FitProminenceLabel            matlab.ui.control.Label
+        FitThreshold                  matlab.ui.control.NumericEditField
+        FitThresholdLabel             matlab.ui.control.Label
         FindPeaksButton               matlab.ui.control.Button
         ComputeKDValues               matlab.ui.control.Button
         DisplayWithModeling           matlab.ui.control.CheckBox
@@ -305,7 +307,7 @@ classdef AppV1 < matlab.apps.AppBase
             plot(app.UIAxesFit, X, Y, 'linewidth', 2.0);
             
             set(0,'DefaultFigureVisible','off');
-            findpeaks(Y, X, 'MinPeakProminence', app.FitProminence.Value);
+            findpeaks(Y, X, 'MinPeakProminence', app.FitProminence.Value, 'MinPeakHeight', app.FitThreshold.Value);
             set(0,'DefaultFigureVisible','on');
             ax2 = gca;
             children = findobj(ax2.Children, '-not', 'tag', 'Signal');
@@ -1089,15 +1091,26 @@ classdef AppV1 < matlab.apps.AppBase
             app.FitProminence.Position = [267 445 29 22];
             app.FitProminence.Value = 5;
 
+            % Create FitThresholdLabel
+            app.FitThresholdLabel = uilabel(app.FitTab);
+            app.FitThresholdLabel.HorizontalAlignment = 'right';
+            app.FitThresholdLabel.Position = [297 445 65 22];
+            app.FitThresholdLabel.Text = 'Threshold';
+
+            % Create FitThreshold
+            app.FitThreshold = uieditfield(app.FitTab, 'numeric');
+            app.FitThreshold.Position = [367 445 29 22];
+            app.FitThreshold.Value = 5;
+
             % Create FindPeaksButton
             app.FindPeaksButton = uibutton(app.FitTab, 'ButtonPushedFcn',@(src,event) findAndLabelPeaks(app));
-            app.FindPeaksButton.Position = [315 445 68 23];
+            app.FindPeaksButton.Position = [415 445 68 23];
             app.FindPeaksButton.Text = 'Find Peaks';
             app.FindPeaksButton.Tag = 'FindFit';
 
             % Create ComputeKDValues
             app.ComputeKDValues = uibutton(app.FitTab, 'ButtonPushedFcn',@(src,event) updateCompoundListWithFits(app));
-            app.ComputeKDValues.Position = [390 445 68 23];
+            app.ComputeKDValues.Position = [490 445 68 23];
             app.ComputeKDValues.Text = 'Send KDs';
             app.ComputeKDValues.Tag = 'SendFit';
 
@@ -1105,7 +1118,7 @@ classdef AppV1 < matlab.apps.AppBase
             app.DisplayWithModeling = uicheckbox(app.FitTab,...
                 'Text', 'Overlay Models?',...
                 'Value', 1,...
-                'Position', [480 449 110 15]);
+                'Position', [580 449 110 15]);
             set(app.DisplayWithModeling, 'Tooltip', 'Currently only displays on Classic or Elution-Extrusion models.')
             
             % Create appInfoTab
