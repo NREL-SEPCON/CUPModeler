@@ -228,6 +228,14 @@ classdef AppV1 < matlab.apps.AppBase
             newRowPosition = height(app.compoundList.Data)+1;
             newRowPositionString = num2str(newRowPosition);
             compoundName = {char(append('Compound',' ',newRowPositionString))};
+            for i = 1:height(app.compoundList.Data)
+                checkedName = app.compoundList.Data(i,1);
+                if string(cell2mat(checkedName)) == string(cell2mat(compoundName))
+                    newRowPosition = height(app.compoundList.Data)+1;
+                    newRowPositionString = num2str(newRowPosition);
+                    compoundName = {char(append('Compound',' ',newRowPositionString,'(Rename)'))};
+                end
+            end
             app.compoundList.Data(end+1,:) = [compoundName,1,1,0,0];
         end
 
