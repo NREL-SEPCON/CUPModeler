@@ -19,8 +19,9 @@ classdef AppV1 < matlab.apps.AppBase
         compoundList                  matlab.ui.control.Table
         includeInjectionVolCheckbox   matlab.ui.control.CheckBox
         ClassicPeaksCheckbox          matlab.ui.control.CheckBox
-        modelSumCheckbox              matlab.ui.control.CheckBox
+        classicModelSumCheckbox       matlab.ui.control.CheckBox
         ExtrusionPeaksCheckbox        matlab.ui.control.CheckBox
+        extrusionModelSumCheckbox     matlab.ui.control.CheckBox
         DualPeaksCheckbox             matlab.ui.control.CheckBox
         MultiPeaksCheckbox            matlab.ui.control.CheckBox
         ExtrusionLinesCheckbox        matlab.ui.control.CheckBox
@@ -333,8 +334,6 @@ classdef AppV1 < matlab.apps.AppBase
             delete(ax2.Parent);
             
             %TODO: Add filter for rejecting peaks before solvent front
-            %TODO: Implement conversion of X-axis to volume for trace fit tab
-            %TODO: Figure out how to use resample() to plot the trace on model plots
         end
         
         function updateCompoundListWithFits(app)
@@ -444,8 +443,19 @@ classdef AppV1 < matlab.apps.AppBase
                 telute = telute + deadVolume;
                 
                 plot(app.UIAxesClassic, telute, Cout, 'linewidth', 2.0);
-
+                
                 [compoundNames, peakPositions, peakHeights, maxHeight] = app.addLabelsToPeaks(telute, Cout);
+
+                if app.classicModelSumCheckbox.Value == 1
+                    summedTrace = sum(Cout);
+                    hold(app.UIAxesClassic, 'on');
+                    plot(app.UIAxesClassic, telute, summedTrace, '-.r', 'linewidth', 1.0);
+                    hold(app.UIAxesClassic, 'off');
+
+                    if maxHeight < max(summedTrace)
+                        maxHeight = max(summedTrace);
+                    end
+                end
 
                 if app.ClassicPeaksCheckbox.Value
                     text(app.UIAxesClassic, peakPositions, peakHeights, compoundNames, 'HorizontalAlignment', 'center');
@@ -503,13 +513,44 @@ classdef AppV1 < matlab.apps.AppBase
                 end
                 
                 plot(app.UIAxesExtrusion, telute, Cout, 'linewidth', 2.0);
+
+                [compoundNames, peakPositions, peakHeights, maxHeight] = app.addLabelsToPeaks(telute, Cout);
+
+                if app.extrusionModelSumCheckbox.Value == 1
+                    summedTrace = sum(Cout);
+                    hold(app.UIAxesExtrusion, 'on');
+                    plot(app.UIAxesExtrusion, telute, summedTrace, '-.r', 'linewidth', 1.0);
+                    hold(app.UIAxesExtrusion, 'off');
+
+                    if maxHeight < max(summedTrace)
+                        maxHeight = max(summedTrace);
+                    end
+                end
+
+                if app.DisplayWithModeling.Value == 1
+                    importedData = guidata(app.UIAxesFit);
+                    dataMidpoint = length(guidata(app.UIAxesFit))/2;
+                    
+                    X = importedData(1:dataMidpoint);
+                    Y = importedData(dataMidpoint+1:end);
+
+                    if string(app.VolumeTimeSwitch.Value) == 'Volume'
+                        X = X*F;
+                    end
+                    
+                    hold(app.UIAxesExtrusion, 'on');
+                    plot(app.UIAxesExtrusion, X, Y, 'black', 'linewidth', 2.0);
+                    hold(app.UIAxesExtrusion, 'off');
+
+                    if maxHeight < max(Y)
+                        maxHeight = max(Y);
+                    end
+                end
                 
                 if app.ExtrusionLinesCheckbox.Value
                     xline(app.UIAxesExtrusion, columnVolumeExtrudedTime, '-.r', sweepStartLabel);
                     xline(app.UIAxesExtrusion, sweepTime, '--b', sweepEndLabel);
                 end
-
-                [compoundNames, peakPositions, peakHeights, maxHeight] = app.addLabelsToPeaks(telute, Cout);
 
                 if app.ExtrusionPeaksCheckbox.Value
                     text(app.UIAxesExtrusion, peakPositions, peakHeights, compoundNames, 'HorizontalAlignment', 'center');
@@ -881,11 +922,11 @@ classdef AppV1 < matlab.apps.AppBase
                 'Value', 1,...
                 'Position', [460 450 102 15]);
 
-            %Create modelSumCheckbox
-            app.modelSumCheckbox = uicheckbox(app.ClassicElutionTab,...
+            %Create classicModelSumCheckbox
+            app.classicModelSumCheckbox = uicheckbox(app.ClassicElutionTab,...
                 'Text', 'Sum?',...
-                'Value', 1,...
-                'Position', [560 450 60 15]);
+                'Value', 0,...
+                'Position', [240 450 60 15]);
 
             % Create ElutionExtrusionTab
             app.ElutionExtrusionTab = uitab(app.TabGroup);
@@ -926,6 +967,12 @@ classdef AppV1 < matlab.apps.AppBase
             app.ExtrusionDurationLabelUnits.HorizontalAlignment = 'center';
             app.ExtrusionDurationLabelUnits.Position = [200 445 29 22];
             app.ExtrusionDurationLabelUnits.Text = 'min';
+
+            %Create extrusionModelSumCheckbox
+            app.extrusionModelSumCheckbox = uicheckbox(app.ElutionExtrusionTab,...
+                'Text', 'Sum?',...
+                'Value', 0,...
+                'Position', [240 450 60 15]);
 
             %Create ExtrusionPeaksCheckbox
             app.ExtrusionPeaksCheckbox = uicheckbox(app.ElutionExtrusionTab,...
