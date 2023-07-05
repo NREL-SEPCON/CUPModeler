@@ -107,7 +107,7 @@ classdef AppV1 < matlab.apps.AppBase
                 app.ElutionDurationLabel.Text = 'Elution Volume';
                 app.ElutionDurationLabelUnits.Text = 'mL';
 
-                app.compoundList.ColumnName(4) = {'Elution Volume (mL)'};
+                app.compoundList.ColumnName(4) = {'Elution Vol. (mL)'};
 
                 app.ExtrusionDurationLabel.Text = 'Extrusion Volume';
                 app.ExtrusionDurationLabelUnits.Text = 'mL';
@@ -138,7 +138,7 @@ classdef AppV1 < matlab.apps.AppBase
                 app.ElutionDurationLabel.Text = 'Elution Duration';
                 app.ElutionDurationLabelUnits.Text = 'min';
 
-                app.compoundList.ColumnName(4) = {'Retention Time (min)'};
+                app.compoundList.ColumnName(4) = {'Ret. Time (min)'};
                 
                 app.ExtrusionDurationLabel.Text = 'Extrusion Duration';
                 app.ExtrusionDurationLabelUnits.Text = 'min';
@@ -166,7 +166,6 @@ classdef AppV1 < matlab.apps.AppBase
                 CUPPrediction(app);
             end
         end
-        
 
         function toggleStationary(app)
             if string(app.StationaryPhaseSwitch.Value) == 'Set Value'
@@ -229,16 +228,28 @@ classdef AppV1 < matlab.apps.AppBase
             newRowPosition = height(app.compoundList.Data)+1;
             newRowPositionString = num2str(newRowPosition);
             compoundName = {char(append('Compound',' ',newRowPositionString))};
-            app.compoundList.Data(end+1,:) = [compoundName,1,1,0];
+            app.compoundList.Data(end+1,:) = [compoundName,1,1,0,0];
         end
 
 
         function removeCompoundButtonPushed(app)
             if height(app.compoundList.Data) > 1
-            app.compoundList.Data(end,:) = []; % Delete Last Row
+            app.compoundList.Data(end,:) = [];
             end
         end
 
+        function removeSpecificCompound(app)
+            if height(app.compoundList.Data) > 1
+                deletedIndex = app.compoundList.Data(:,5);
+                for i = 1:height(deletedIndex)
+                    if cell2mat(deletedIndex(i)) == 1
+                        app.compoundList.Data(i,:) = [];
+                    end
+                end
+            else 
+                app.compoundList.Data(1,5) = {false};
+            end
+        end
 
         function saveCompounds(app)
             filename = ['Compound List ' + string(datetime) + '.xls'];
@@ -315,7 +326,6 @@ classdef AppV1 < matlab.apps.AppBase
             delete(ax2.Parent);
             
             %TODO: Add filter for rejecting peaks before solvent front
-            %TODO: Add threshold field to enable rejecting peaks below certain intensity
             %TODO: Implement conversion of X-axis to volume for trace fit tab
             %TODO: Figure out how to use resample() to plot the trace on model plots
         end
@@ -332,7 +342,7 @@ classdef AppV1 < matlab.apps.AppBase
             X = plottedData(1:dataMidpoint);
             Y = smooth(plottedData(dataMidpoint+1:end), app.FitSpan.Value);
 
-            [pks,locs] = findpeaks(Y, 'MinPeakProminence', app.FitProminence.Value);
+            [pks,locs] = findpeaks(Y, 'MinPeakProminence', app.FitProminence.Value, 'MinPeakHeight', app.FitThreshold.Value);
             retentionTimes = X(locs);
 
             partitionCoefficients = ((F*retentionTimes)-Vm+Vd)/Vs;
@@ -349,7 +359,7 @@ classdef AppV1 < matlab.apps.AppBase
                 newRowPositionString = num2str(i);
                 compoundName = {char(append('Compound ',newRowPositionString))};
 
-                app.compoundList.Data(i,:) = [compoundName,K,C,T];
+                app.compoundList.Data(i,:) = [compoundName,K,C,T,0];
             end
         end
 
@@ -758,10 +768,10 @@ classdef AppV1 < matlab.apps.AppBase
                 'Position', [560 305 120 15]);
             
             % Create UITable
-            initialRows = {'Compound 1' 1 1 0; 'Compound 2' 2 1 0};
-            app.compoundList = uitable(app.UIFigure, ...
-                "ColumnName",{'Compound'; 'KD'; 'Conc. (g/L)'; 'Retention Time (min)'}, ...
-                "ColumnFormat",{'char' [] [] []}, ...
+            initialRows = {'Compound 1' 1 1 0 0; 'Compound 2' 2 1 0 0};
+            app.compoundList = uitable(app.UIFigure,'CellEdit',@(src,event) removeSpecificCompound(app), ...
+                "ColumnName",{'Compound'; 'KD'; 'Conc. (g/L)'; 'Ret. Time (min)'; 'Delete?'}, ...
+                "ColumnFormat",{'char' [] [] [] 'logical'}, ...
                 "Data",initialRows);
             app.compoundList.RowName = {};
             tableStyle = uistyle("HorizontalAlignment","center");
