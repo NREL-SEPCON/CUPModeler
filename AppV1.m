@@ -19,6 +19,7 @@ classdef AppV1 < matlab.apps.AppBase
         compoundList                  matlab.ui.control.Table
         includeInjectionVolCheckbox   matlab.ui.control.CheckBox
         ClassicPeaksCheckbox          matlab.ui.control.CheckBox
+        modelSumCheckbox              matlab.ui.control.CheckBox
         ExtrusionPeaksCheckbox        matlab.ui.control.CheckBox
         DualPeaksCheckbox             matlab.ui.control.CheckBox
         MultiPeaksCheckbox            matlab.ui.control.CheckBox
@@ -231,9 +232,7 @@ classdef AppV1 < matlab.apps.AppBase
             for i = 1:height(app.compoundList.Data)
                 checkedName = app.compoundList.Data(i,1);
                 if string(cell2mat(checkedName)) == string(cell2mat(compoundName))
-                    newRowPosition = height(app.compoundList.Data)+1;
-                    newRowPositionString = num2str(newRowPosition);
-                    compoundName = {char(append('Compound',' ',newRowPositionString,'(Rename)'))};
+                    compoundName = string(compoundName) + 'Rename)';
                 end
             end
             app.compoundList.Data(end+1,:) = [compoundName,1,1,0,0];
@@ -443,12 +442,33 @@ classdef AppV1 < matlab.apps.AppBase
             
             if contains(identifier, 'Classic')
                 telute = telute + deadVolume;
+                
                 plot(app.UIAxesClassic, telute, Cout, 'linewidth', 2.0);
 
                 [compoundNames, peakPositions, peakHeights, maxHeight] = app.addLabelsToPeaks(telute, Cout);
 
                 if app.ClassicPeaksCheckbox.Value
                     text(app.UIAxesClassic, peakPositions, peakHeights, compoundNames, 'HorizontalAlignment', 'center');
+                end
+
+                if app.DisplayWithModeling.Value == 1
+                    importedData = guidata(app.UIAxesFit);
+                    dataMidpoint = length(guidata(app.UIAxesFit))/2;
+                    
+                    X = importedData(1:dataMidpoint);
+                    Y = importedData(dataMidpoint+1:end);
+
+                    if string(app.VolumeTimeSwitch.Value) == 'Volume'
+                        X = X*F;
+                    end
+                    
+                    hold(app.UIAxesClassic, 'on');
+                    plot(app.UIAxesClassic, X, Y, 'black', 'linewidth', 2.0);
+                    hold(app.UIAxesClassic, 'off');
+
+                    if maxHeight < max(Y)
+                        maxHeight = max(Y);
+                    end
                 end
 
                 app.UIAxesClassic.XLim = [0 elutionTime];
@@ -861,6 +881,12 @@ classdef AppV1 < matlab.apps.AppBase
                 'Value', 1,...
                 'Position', [460 450 102 15]);
 
+            %Create modelSumCheckbox
+            app.modelSumCheckbox = uicheckbox(app.ClassicElutionTab,...
+                'Text', 'Sum?',...
+                'Value', 1,...
+                'Position', [560 450 60 15]);
+
             % Create ElutionExtrusionTab
             app.ElutionExtrusionTab = uitab(app.TabGroup);
             app.ElutionExtrusionTab.Title = 'Elution-Extrusion';
@@ -1134,9 +1160,9 @@ classdef AppV1 < matlab.apps.AppBase
 
             %Create DisplayWithModelingCheckbox
             app.DisplayWithModeling = uicheckbox(app.FitTab,...
-                'Text', 'Overlay Models?',...
-                'Value', 1,...
-                'Position', [580 449 110 15]);
+                'Text', 'Overlay on Models?',...
+                'Value', 0,...
+                'Position', [570 449 130 15]);
             set(app.DisplayWithModeling, 'Tooltip', 'Currently only displays on Classic or Elution-Extrusion models.')
             
             % Create appInfoTab
@@ -1148,14 +1174,14 @@ classdef AppV1 < matlab.apps.AppBase
             app.ColumnEfficiencyNLabel = uilabel(app.Info);
             app.ColumnEfficiencyNLabel.HorizontalAlignment = 'center';
             app.ColumnEfficiencyNLabel.WordWrap = 'on';
-            app.ColumnEfficiencyNLabel.Position = [33 501 91 28];
+            app.ColumnEfficiencyNLabel.Position = [33 201 91 28];
             app.ColumnEfficiencyNLabel.Text = 'Column Efficiency (N)';
             
             % Create ColumnEfficiencyN
             app.ColumnEfficiencyN = uieditfield(app.Info, 'numeric');
             app.ColumnEfficiencyN.UpperLimitInclusive = 'off';
             app.ColumnEfficiencyN.Limits = [1 Inf];
-            app.ColumnEfficiencyN.Position = [78 504 51 22];
+            app.ColumnEfficiencyN.Position = [78 204 51 22];
             app.ColumnEfficiencyN.Value = 400;
 
             app.InfoTitle = uilabel(app.Info);
