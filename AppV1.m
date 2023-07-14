@@ -650,8 +650,10 @@ classdef AppV1 < matlab.apps.AppBase
                 
                 xMatrix = sum(Xtot, 3);
                 yAxis = [1:size(xMatrix,1)].*(1/size(xMatrix,1));
+
+                matrixScaler = max(max(xMatrix));
                 
-                contourSpacing = linspace(0.005, .1, 30);
+                contourSpacing = linspace(0.001*matrixScaler, .05*matrixScaler, 30);
                 
                 contourf(app.UIAxesMultiPosition, telute, yAxis, xMatrix, contourSpacing, 'linecolor', 'none');
                 
