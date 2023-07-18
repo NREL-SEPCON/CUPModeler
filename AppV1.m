@@ -381,24 +381,8 @@ classdef AppV1 < matlab.apps.AppBase
                 %shaded = get(shading,'children');
                 %set(shaded,'FaceAlpha',0.5);
             end
-            
         end
 
-        function addNValue(app)
-            NValue = 100;
-            app.PulseNList.Data(end+1,:) = [app.FlowRate.Value,NValue,0];
-        end
-
-        function removeSpecificNValue(app)
-            deletedIndex = app.PulseNList.Data(:,3);
-            for i = 1:height(deletedIndex)
-                positionCheck = deletedIndex(i);
-                if positionCheck == 1
-                    app.PulseNList.Data(i,:) = [];
-                end
-            end
-        end
-        
         function updateCompoundListWithFits(app)
             F = app.FlowRate.Value;
             Vm = (1-app.StationaryPhaseRetention.Value)*app.ColumnVolume.Value;
@@ -414,7 +398,7 @@ classdef AppV1 < matlab.apps.AppBase
             [pks,locs] = findpeaks(Y, 'MinPeakProminence', app.FitProminence.Value, 'MinPeakHeight', app.FitThreshold.Value);
             retentionTimes = X(locs);
 
-            partitionCoefficients = ((F*retentionTimes)-Vm+Vd)/Vs;
+            partitionCoefficients = ((F*retentionTimes)-Vm+Vd)/Vs; %TODO: take into account sweep volume and extrusion for partition coefficient values
 
             for i = 1:height(app.compoundList.Data)
                 app.removeCompoundButtonPushed()
@@ -432,6 +416,31 @@ classdef AppV1 < matlab.apps.AppBase
             end
         end
 
+        function addNValue(app)
+            plottedData = guidata(app.UIAxesPulse);
+            dataMidpoint = length(guidata(app.UIAxesPulse))/2;
+            
+            X = plottedData(1:dataMidpoint);
+            Y = smooth(plottedData(dataMidpoint+1:end), app.PulseSpan.Value);
+
+            [pks,locs] = findpeaks(Y, 'MinPeakProminence', app.PulseProminence.Value, 'MinPeakHeight', app.PulseThreshold.Value);
+            retentionTimes = X(locs);
+
+            NValue = 100;
+            if length(retentionTimes) == 1
+                app.PulseNList.Data(end+1,:) = [app.FlowRate.Value,NValue,0];
+            end
+        end
+
+        function removeSpecificNValue(app)
+            deletedIndex = app.PulseNList.Data(:,3);
+            for i = 1:height(deletedIndex)
+                positionCheck = deletedIndex(i);
+                if positionCheck == 1
+                    app.PulseNList.Data(i,:) = [];
+                end
+            end
+        end
 
         function [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime deadVolume] = computeValues(app)
             F = app.FlowRate.Value;
