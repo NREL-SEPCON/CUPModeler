@@ -80,21 +80,33 @@ classdef AppV1 < matlab.apps.AppBase
         addCycle                      matlab.ui.control.Button
         UIAxesMultiPosition           matlab.ui.control.UIAxes
         UIAxesMulti                   matlab.ui.control.UIAxes
+        PulseTab                      matlab.ui.container.Tab
+        UIAxesPulse                   matlab.ui.control.UIAxes
+        ImportPulseTraceButton        matlab.ui.control.Button
+        AddPulseNValue                matlab.ui.control.Button
+        PulseSpan                     matlab.ui.control.NumericEditField
+        PulseSpanLabel                matlab.ui.control.Label
+        PulseProminence               matlab.ui.control.NumericEditField
+        PulseProminenceLabel          matlab.ui.control.Label
+        PulseThreshold                matlab.ui.control.NumericEditField
+        PulseThresholdLabel           matlab.ui.control.Label
+        PulseNList                    matlab.ui.control.Table
         FitTab                        matlab.ui.container.Tab
+        UIAxesFit                     matlab.ui.control.UIAxes
         ImportTraceButton             matlab.ui.control.Button
+        FindPulsePeaksButton          matlab.ui.control.Button
         FitSpan                       matlab.ui.control.NumericEditField
         FitSpanLabel                  matlab.ui.control.Label
         FitProminence                 matlab.ui.control.NumericEditField
         FitProminenceLabel            matlab.ui.control.Label
         FitThreshold                  matlab.ui.control.NumericEditField
         FitThresholdLabel             matlab.ui.control.Label
-        FindPeaksButton               matlab.ui.control.Button
+        FindFitPeaksButton            matlab.ui.control.Button
         ComputeKDValues               matlab.ui.control.Button
         DisplayWithModeling           matlab.ui.control.CheckBox
         Info                          matlab.ui.container.Tab
         InfoTitle                     matlab.ui.control.Label
         InfoVersion                   matlab.ui.control.Label
-        UIAxesFit                     matlab.ui.control.UIAxes
         InfoCitation                  matlab.ui.control.Label
         InfoCredits                   matlab.ui.control.Label
     end
@@ -302,7 +314,7 @@ classdef AppV1 < matlab.apps.AppBase
         end
 
         function importTrace(app)
-            [file,filepath,filter] = uigetfile('.xlsx', '.xls');
+            [file,filepath,filter] = uigetfile({'*.*';'*.xls';'*.xlsx'});
             filename = fullfile(filepath,file);
 
             [importedData] = xlsread(filename)';
@@ -310,30 +322,81 @@ classdef AppV1 < matlab.apps.AppBase
             X = importedData(1,:);
             Y = importedData(2,:);
 
-            app.FitSpan.Limits = [2 length(Y)/2];
+            identifier = string(gcbo().Tag);
             
-            guidata(app.UIAxesFit, [X,Y]);
-            plot(app.UIAxesFit, X, Y, 'linewidth', 2.0);
+            if contains(identifier, 'Fit')
+                app.FitSpan.Limits = [2 length(Y)/2];
+                
+                guidata(app.UIAxesFit, [X,Y]);
+                plot(app.UIAxesFit, X, Y, 'linewidth', 2.0);
+            end
+
+            if contains(identifier, 'Pulse')                
+                guidata(app.UIAxesPulse, [X,Y]);
+                plot(app.UIAxesPulse, X, Y, 'linewidth', 2.0);
+            end
+
         end
         
         function findAndLabelPeaks(app)
-            plottedData = guidata(app.UIAxesFit);
-            dataMidpoint = length(guidata(app.UIAxesFit))/2;
+            identifier = string(gcbo().Tag);
+
+            if contains(identifier, 'Fit')
+                plottedData = guidata(app.UIAxesFit);
+                dataMidpoint = length(guidata(app.UIAxesFit))/2;
+                X = plottedData(1:dataMidpoint);
+                Y = smooth(plottedData(dataMidpoint+1:end), app.FitSpan.Value);
+                
+                plot(app.UIAxesFit, X, Y, 'linewidth', 2.0);
+                
+                set(0,'DefaultFigureVisible','off');
+                findpeaks(Y, X, 'MinPeakProminence', app.FitProminence.Value, 'MinPeakHeight', app.FitThreshold.Value);
+                set(0,'DefaultFigureVisible','on');
+                ax2 = gca;
+                children = findobj(ax2.Children, '-not', 'tag', 'Signal');
+                copyobj(children, app.UIAxesFit);
+                delete(ax2.Parent);
+                %TODO: Add filter for rejecting peaks before solvent front
+            end
+
+            if contains(identifier, 'Pulse')
+                plottedData = guidata(app.UIAxesPulse);
+                dataMidpoint = length(guidata(app.UIAxesPulse))/2;
+                X = plottedData(1:dataMidpoint);
+                Y = smooth(plottedData(dataMidpoint+1:end), app.PulseSpan.Value);
+                
+                plot(app.UIAxesPulse, X, Y, 'linewidth', 2.0);
+                
+                set(0,'DefaultFigureVisible','off');
+                findpeaks(Y, X, 'MinPeakProminence', app.PulseProminence.Value, 'MinPeakHeight', app.PulseThreshold.Value);
+                set(0,'DefaultFigureVisible','on');
+                ax2 = gca;
+                %shading = area(X,Y);
+                Peaks = findobj(ax2.Children, '-not', 'tag', 'Signal');
+                %copyobj(shading, app.UIAxesPulse);
+                copyobj(Peaks, app.UIAxesPulse);
+                %delete(shading.Parent);
+                delete(ax2.Parent);
+
+                %shaded = get(shading,'children');
+                %set(shaded,'FaceAlpha',0.5);
+            end
             
-            X = plottedData(1:dataMidpoint);
-            Y = smooth(plottedData(dataMidpoint+1:end), app.FitSpan.Value);
-            
-            plot(app.UIAxesFit, X, Y, 'linewidth', 2.0);
-            
-            set(0,'DefaultFigureVisible','off');
-            findpeaks(Y, X, 'MinPeakProminence', app.FitProminence.Value, 'MinPeakHeight', app.FitThreshold.Value);
-            set(0,'DefaultFigureVisible','on');
-            ax2 = gca;
-            children = findobj(ax2.Children, '-not', 'tag', 'Signal');
-            copyobj(children, app.UIAxesFit);
-            delete(ax2.Parent);
-            
-            %TODO: Add filter for rejecting peaks before solvent front
+        end
+
+        function addNValue(app)
+            NValue = 100;
+            app.PulseNList.Data(end+1,:) = [app.FlowRate.Value,NValue,0];
+        end
+
+        function removeSpecificNValue(app)
+            deletedIndex = app.PulseNList.Data(:,3);
+            for i = 1:height(deletedIndex)
+                positionCheck = deletedIndex(i);
+                if positionCheck == 1
+                    app.PulseNList.Data(i,:) = [];
+                end
+            end
         end
         
         function updateCompoundListWithFits(app)
@@ -1142,6 +1205,81 @@ classdef AppV1 < matlab.apps.AppBase
                 'Value', 1,...
                 'Position', [620 450 102 15]);
 
+            % Create PulseTab
+            app.PulseTab = uitab(app.TabGroup);
+            app.PulseTab.Title = 'Pulse Test';
+            app.PulseTab.Tag = 'Pulse';
+
+            % Create ImportPulseTraceButton
+            app.ImportPulseTraceButton = uibutton(app.PulseTab, 'ButtonPushedFcn',@(src,event) importTrace(app));
+            app.ImportPulseTraceButton.Position = [40 445 68 23];
+            app.ImportPulseTraceButton.Text = 'Import';
+            app.ImportPulseTraceButton.Tag = 'ImportPulse';
+
+            % Create UIAxesPulse
+            app.UIAxesPulse = uiaxes(app.PulseTab);
+            xlabel(app.UIAxesPulse, 'Elution Time')
+            ylabel(app.UIAxesPulse, 'Concentration')
+            zlabel(app.UIAxesPulse, 'Z')
+            app.UIAxesPulse.Position = [8 10 450 430];
+
+            % Create FindPulsePeaksButton
+            app.FindPulsePeaksButton = uibutton(app.PulseTab, 'ButtonPushedFcn',@(src,event) findAndLabelPeaks(app));
+            app.FindPulsePeaksButton.Position = [415 445 68 23];
+            app.FindPulsePeaksButton.Text = 'Find Peaks';
+            app.FindPulsePeaksButton.Tag = 'FindPulse';
+
+            % Create AddPulseNValue
+            app.AddPulseNValue = uibutton(app.PulseTab, 'ButtonPushedFcn',@(src,event) addNValue(app));
+            app.AddPulseNValue.Position = [490 445 68 23];
+            app.AddPulseNValue.Text = 'Add N';
+            app.AddPulseNValue.Tag = 'AddN';
+
+            % Create PulseSpanLabel
+            app.PulseSpanLabel = uilabel(app.PulseTab);
+            app.PulseSpanLabel.HorizontalAlignment = 'right';
+            app.PulseSpanLabel.Position = [120 445 30 22];
+            app.PulseSpanLabel.Text = 'Span';
+
+            % Create PulseSpan
+            app.PulseSpan = uieditfield(app.PulseTab, 'numeric');
+            app.PulseSpan.Position = [155 445 29 22];
+            app.PulseSpan.Value = 40;
+            app.PulseSpan.RoundFractionalValues = 1;
+            app.PulseSpan.Limits = [2 1000];
+
+            % Create PulseProminenceLabel
+            app.PulseProminenceLabel = uilabel(app.PulseTab);
+            app.PulseProminenceLabel.HorizontalAlignment = 'right';
+            app.PulseProminenceLabel.Position = [197 445 65 22];
+            app.PulseProminenceLabel.Text = 'Prominence';
+
+            % Create PulseProminence
+            app.PulseProminence = uieditfield(app.PulseTab, 'numeric');
+            app.PulseProminence.Position = [267 445 29 22];
+            app.PulseProminence.Value = 5;
+
+            % Create PulseThresholdLabel
+            app.PulseThresholdLabel = uilabel(app.PulseTab);
+            app.PulseThresholdLabel.HorizontalAlignment = 'right';
+            app.PulseThresholdLabel.Position = [297 445 65 22];
+            app.PulseThresholdLabel.Text = 'Threshold';
+
+            % Create PulseThreshold
+            app.PulseThreshold = uieditfield(app.PulseTab, 'numeric');
+            app.PulseThreshold.Position = [367 445 29 22];
+            app.PulseThreshold.Value = 5;
+
+            % Create PulseNTable
+            app.PulseNList = uitable(app.PulseTab,'CellEdit',@(src,event) removeSpecificNValue(app), ...
+                "ColumnName",{'Flow Rate'; 'N'; 'Del?'}, ...
+                "ColumnFormat",{[] [] 'logical'});
+            app.PulseNList.RowName = {};
+            addStyle(app.PulseNList, tableStyle);
+            app.PulseNList.ColumnSortable = true;
+            app.PulseNList.ColumnEditable = true;
+            app.PulseNList.Position = [473 232 220 200];
+
             % Create FittingTab
             app.FitTab = uitab(app.TabGroup);
             app.FitTab.Title = 'Trace Fitting';
@@ -1153,7 +1291,7 @@ classdef AppV1 < matlab.apps.AppBase
             ylabel(app.UIAxesFit, 'Concentration')
             zlabel(app.UIAxesFit, 'Z')
             app.UIAxesFit.Position = [8 10 695 430];
-
+            
             % Create ImportTraceButton
             app.ImportTraceButton = uibutton(app.FitTab, 'ButtonPushedFcn',@(src,event) importTrace(app));
             app.ImportTraceButton.Position = [40 445 68 23];
@@ -1195,11 +1333,11 @@ classdef AppV1 < matlab.apps.AppBase
             app.FitThreshold.Position = [367 445 29 22];
             app.FitThreshold.Value = 5;
 
-            % Create FindPeaksButton
-            app.FindPeaksButton = uibutton(app.FitTab, 'ButtonPushedFcn',@(src,event) findAndLabelPeaks(app));
-            app.FindPeaksButton.Position = [415 445 68 23];
-            app.FindPeaksButton.Text = 'Find Peaks';
-            app.FindPeaksButton.Tag = 'FindFit';
+            % Create FindFitPeaksButton
+            app.FindFitPeaksButton = uibutton(app.FitTab, 'ButtonPushedFcn',@(src,event) findAndLabelPeaks(app));
+            app.FindFitPeaksButton.Position = [415 445 68 23];
+            app.FindFitPeaksButton.Text = 'Find Peaks';
+            app.FindFitPeaksButton.Tag = 'FindFit';
 
             % Create ComputeKDValues
             app.ComputeKDValues = uibutton(app.FitTab, 'ButtonPushedFcn',@(src,event) updateCompoundListWithFits(app));
