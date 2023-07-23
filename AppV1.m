@@ -10,6 +10,7 @@ classdef AppV1 < matlab.apps.AppBase
         AscDescLabel                  matlab.ui.control.Label
         AscDesc                       matlab.ui.control.Switch
         StationaryPhaseSwitch         matlab.ui.control.Switch
+        ColumnEfficiencySwitch        matlab.ui.control.Switch
         removeCompound                matlab.ui.control.Button
         addCompound                   matlab.ui.control.Button
         saveCompoundList              matlab.ui.control.Button
@@ -46,6 +47,12 @@ classdef AppV1 < matlab.apps.AppBase
         SfCoefficientALabel           matlab.ui.control.Label
         SfCoefficientB                matlab.ui.control.NumericEditField
         SfCoefficientBLabel           matlab.ui.control.Label
+        NCoefficientA                 matlab.ui.control.NumericEditField
+        NCoefficientALabel            matlab.ui.control.Label
+        NCoefficientB                 matlab.ui.control.NumericEditField
+        NCoefficientBLabel            matlab.ui.control.Label
+        NCoefficientC                 matlab.ui.control.NumericEditField
+        NCoefficientCLabel            matlab.ui.control.Label
         ColumnVolume                  matlab.ui.control.NumericEditField
         ColumnVolumeLabel             matlab.ui.control.Label
         ColumnVolumeLabelUnits        matlab.ui.control.Label
@@ -88,13 +95,25 @@ classdef AppV1 < matlab.apps.AppBase
         PulseSpanLabel                matlab.ui.control.Label
         PulseProminence               matlab.ui.control.NumericEditField
         PulseProminenceLabel          matlab.ui.control.Label
-        PulseThreshold                matlab.ui.control.NumericEditField
-        PulseThresholdLabel           matlab.ui.control.Label
+        PulseBaseline                 matlab.ui.control.NumericEditField
+        PulseBaselineLabel            matlab.ui.control.Label
+        PulseNTableListLabel          matlab.ui.control.Label
+        regressionHeader              matlab.ui.control.Label
+        NEquationLabel                matlab.ui.control.Label
+        useNButton                    matlab.ui.control.Button
+        labelNA                       matlab.ui.control.Label
+        labelNB                       matlab.ui.control.Label
+        labelNC                       matlab.ui.control.Label
+        SfEquationLabel               matlab.ui.control.Label
+        useSfButton                   matlab.ui.control.Button
+        labelSfA                      matlab.ui.control.Label
+        labelSfB                      matlab.ui.control.Label
         PulseNList                    matlab.ui.control.Table
+        FindPulsePeaksButton          matlab.ui.control.Button
+        dataPreviewTable              matlab.ui.control.Table
         FitTab                        matlab.ui.container.Tab
         UIAxesFit                     matlab.ui.control.UIAxes
         ImportTraceButton             matlab.ui.control.Button
-        FindPulsePeaksButton          matlab.ui.control.Button
         FitSpan                       matlab.ui.control.NumericEditField
         FitSpanLabel                  matlab.ui.control.Label
         FitProminence                 matlab.ui.control.NumericEditField
@@ -182,61 +201,100 @@ classdef AppV1 < matlab.apps.AppBase
         end
 
         function toggleStationary(app)
-            if string(app.StationaryPhaseSwitch.Value) == 'Set Value'
+            if string(app.StationaryPhaseSwitch.Value) == 'Set Sf'
                 
                 delete(app.SfCoefficientA);
                 delete(app.SfCoefficientALabel);
                 delete(app.SfCoefficientB);
                 delete(app.SfCoefficientBLabel);
-
-                % Create StationaryPhaseRetentionLabel
-                app.StationaryPhaseRetentionLabel = uilabel(app.UIFigure);
-                app.StationaryPhaseRetentionLabel.HorizontalAlignment = 'center';
-                app.StationaryPhaseRetentionLabel.WordWrap = 'on';
-                app.StationaryPhaseRetentionLabel.Position = [202 316 96 57];
-                app.StationaryPhaseRetentionLabel.Text = 'Stationary Phase Retention';
                 
                 % Create StationaryPhaseRetention
                 app.StationaryPhaseRetention = uieditfield(app.UIFigure, 'numeric');
                 app.StationaryPhaseRetention.LowerLimitInclusive = 'off';
                 app.StationaryPhaseRetention.UpperLimitInclusive = 'off';
                 app.StationaryPhaseRetention.Limits = [0 1];
-                app.StationaryPhaseRetention.Position = [300 333 51 22];
+                app.StationaryPhaseRetention.Position = [72 345 51 22];
                 app.StationaryPhaseRetention.Value = 0.75;
 
-            elseif string(app.StationaryPhaseSwitch.Value) == 'Coefficients'
+            elseif string(app.StationaryPhaseSwitch.Value) == 'Coeff.'
 
                 delete(app.StationaryPhaseRetention);
-                delete(app.StationaryPhaseRetentionLabel);
 
                 app.SfCoefficientALabel = uilabel(app.UIFigure);
                 app.SfCoefficientALabel.HorizontalAlignment = 'center';
                 app.SfCoefficientALabel.WordWrap = 'on';
-                app.SfCoefficientALabel.Position = [200 316 20 57];
+                app.SfCoefficientALabel.Position = [20 345 20 20];
                 app.SfCoefficientALabel.Text = 'A';
 
                 app.SfCoefficientA = uieditfield(app.UIFigure, 'numeric');
                 app.SfCoefficientA.LowerLimitInclusive = 'off';
                 app.SfCoefficientA.UpperLimitInclusive = 'off';
-                app.SfCoefficientA.Limits = [0 1];
-                app.SfCoefficientA.Position = [220 333 51 22];
+                app.SfCoefficientA.Position = [40 345 51 22];
                 app.SfCoefficientA.Value = 0.9821;
 
                 app.SfCoefficientBLabel = uilabel(app.UIFigure);
                 app.SfCoefficientBLabel.HorizontalAlignment = 'center';
                 app.SfCoefficientBLabel.WordWrap = 'on';
-                app.SfCoefficientBLabel.Position = [280 316 20 57];
+                app.SfCoefficientBLabel.Position = [100 345 20 20];
                 app.SfCoefficientBLabel.Text = 'B';
 
                 app.SfCoefficientB = uieditfield(app.UIFigure, 'numeric');
                 app.SfCoefficientB.LowerLimitInclusive = 'off';
                 app.SfCoefficientB.UpperLimitInclusive = 'off';
-                app.SfCoefficientB.Limits = [0 1];
-                app.SfCoefficientB.Position = [300 333 51 22];
-                app.SfCoefficientB.Value = 0.1426;
+                app.SfCoefficientB.Position = [120 345 51 22];
+                app.SfCoefficientB.Value = -0.1426;
             end
         end
 
+        function toggleEfficiency(app)
+            if string(app.ColumnEfficiencySwitch.Value) == 'Set N'
+                
+                delete(app.NCoefficientA);
+                delete(app.NCoefficientALabel);
+                delete(app.NCoefficientB);
+                delete(app.NCoefficientBLabel);
+                delete(app.NCoefficientC);
+                delete(app.NCoefficientCLabel);
+                
+                % Create ColumnEfficiencyN
+                app.ColumnEfficiencyN = uieditfield(app.UIFigure, 'numeric');
+                app.ColumnEfficiencyN.UpperLimitInclusive = 'off';
+                app.ColumnEfficiencyN.Limits = [1 Inf];
+                app.ColumnEfficiencyN.Position = [305 345 51 22];
+                app.ColumnEfficiencyN.Value = 400;
+
+            elseif string(app.ColumnEfficiencySwitch.Value) == 'Coeff.'
+
+                delete(app.ColumnEfficiencyN);
+
+                app.NCoefficientALabel = uilabel(app.UIFigure);
+                app.NCoefficientALabel.HorizontalAlignment = 'center';
+                app.NCoefficientALabel.Position = [205 345 20 20];
+                app.NCoefficientALabel.Text = 'A';
+
+                app.NCoefficientA = uieditfield(app.UIFigure, 'numeric');
+                app.NCoefficientA.Position = [225 345 51 22];
+                app.NCoefficientA.Value = 371.239;
+
+                app.NCoefficientBLabel = uilabel(app.UIFigure);
+                app.NCoefficientBLabel.HorizontalAlignment = 'center';
+                app.NCoefficientBLabel.Position = [285 345 20 20];
+                app.NCoefficientBLabel.Text = 'B';
+
+                app.NCoefficientB = uieditfield(app.UIFigure, 'numeric');
+                app.NCoefficientB.Position = [305 345 51 22];
+                app.NCoefficientB.Value = -7.2042;
+
+                app.NCoefficientCLabel = uilabel(app.UIFigure);
+                app.NCoefficientCLabel.HorizontalAlignment = 'center';
+                app.NCoefficientCLabel.Position = [365 345 20 20];
+                app.NCoefficientCLabel.Text = 'C';
+
+                app.NCoefficientC = uieditfield(app.UIFigure, 'numeric');
+                app.NCoefficientC.Position = [385 345 51 22];
+                app.NCoefficientC.Value = 0.14807;
+            end
+        end
 
         function addCompoundButtonPushed(app)
             newRowPosition = height(app.compoundList.Data)+1;
@@ -250,7 +308,6 @@ classdef AppV1 < matlab.apps.AppBase
             end
             app.compoundList.Data(end+1,:) = [compoundName,1,1,0,0];
         end
-
 
         function removeCompoundButtonPushed(app)
             if height(app.compoundList.Data) > 1
@@ -278,13 +335,11 @@ classdef AppV1 < matlab.apps.AppBase
             writecell(compoundTableContents, filename);
         end
 
-
         function openCompounds(app)
             [filename] = uigetfile('.xls');
             importedTable = array2table(readcell(filename));
             app.compoundList.Data = table2cell(importedTable);
         end
-
 
         function saveSwitchTimeList(app)
             filename = ['Switching Times ' + string(datetime) + '.xls'];
@@ -293,13 +348,11 @@ classdef AppV1 < matlab.apps.AppBase
             writecell(switchTimeTableContents, filename);
         end
 
-
         function openSwitchTimeList(app)
             [filename] = uigetfile('.xls');
             importedTable = array2table(readcell(filename));
             app.SwitchTimeList.Data = table2cell(importedTable);
         end
-
 
         function addCycleButtonPushed(app)
             newRowPosition = height(app.SwitchTimeList.Data)+1;
@@ -308,79 +361,98 @@ classdef AppV1 < matlab.apps.AppBase
             app.SwitchTimeList.Data(end+1,:) = [cycleName,5];
         end
 
-
         function removeCycleButtonPushed(app)
             app.SwitchTimeList.Data(end,:) = [];
         end
 
         function importTrace(app)
+            identifier = string(gcbo().Tag);
+            
             [file,filepath,filter] = uigetfile({'*.*';'*.xls';'*.xlsx'});
             filename = fullfile(filepath,file);
+            
+            options = detectImportOptions(filename);
+            
+            dataPreview = preview(filename, options);
 
             [importedData] = xlsread(filename)';
 
-            X = importedData(1,:);
-            Y = importedData(2,:);
+            if contains(identifier, 'Pulse')
+                % Create dataPreviewTable
+                app.dataPreviewTable = uitable(app.PulseTab);
+            elseif contains(identifier, 'Fit')
+                app.dataPreviewTable = uitable(app.FitTab);
+            end
+            app.dataPreviewTable.Data = dataPreview;
+            app.dataPreviewTable.Position = [20 20 680 400];
+            app.dataPreviewTable.ColumnWidth = 'fit';
 
-            identifier = string(gcbo().Tag);
-            
-            if contains(identifier, 'Fit')
-                app.FitSpan.Limits = [2 length(Y)/2];
+            try
+                selectedFields = str2num(cell2mat(inputdlg({'Choose column of X axis data:', 'Choose column of Y axis data'},'Data Selection')));
                 
-                guidata(app.UIAxesFit, [X,Y]);
-                plot(app.UIAxesFit, X, Y, 'linewidth', 2.0);
+            catch
+                delete(app.dataPreviewTable);
             end
 
-            if contains(identifier, 'Pulse')                
-                guidata(app.UIAxesPulse, [X,Y]);
-                plot(app.UIAxesPulse, X, Y, 'linewidth', 2.0);
-            end
+            delete(app.dataPreviewTable);
 
+            if all(selectedFields > 0) && all(floor(selectedFields) == selectedFields)
+                X = importedData(selectedFields(1),:);
+                Y = importedData(selectedFields(2),:);
+                
+                if contains(identifier, 'Fit')
+                    app.FitSpan.Limits = [2 length(Y)/2];
+                    
+                    guidata(app.UIAxesFit, [X,Y]);
+                    plot(app.UIAxesFit, X, Y, 'linewidth', 2.0);
+                end
+    
+                if contains(identifier, 'Pulse')                
+                    guidata(app.UIAxesPulse, [X,Y]);
+                    plot(app.UIAxesPulse, X, Y, 'linewidth', 2.0);
+                end
+            end
         end
         
-        function findAndLabelPeaks(app)
-            identifier = string(gcbo().Tag);
+        function findAndLabelFitPeaks(app)
+            plottedData = guidata(app.UIAxesFit);
+            dataMidpoint = length(guidata(app.UIAxesFit))/2;
+            X = plottedData(1:dataMidpoint);
+            Y = smooth(plottedData(dataMidpoint+1:end), app.FitSpan.Value);
+            
+            plot(app.UIAxesFit, X, Y, 'linewidth', 2.0);
+            yline(app.UIAxesFit, app.FitThreshold.Value, '-.r', 'Threshold');
+            
+            set(0,'DefaultFigureVisible','off');
+            findpeaks(Y, X, 'MinPeakProminence', app.FitProminence.Value, 'MinPeakHeight', app.FitThreshold.Value);
+            set(0,'DefaultFigureVisible','on');
+            ax2 = gca;
+            children = findobj(ax2.Children, '-not', 'tag', 'Signal');
+            copyobj(children, app.UIAxesFit);
+            delete(ax2.Parent);
+            %TODO: Add filter for rejecting peaks before solvent front
+        end
 
-            if contains(identifier, 'Fit')
-                plottedData = guidata(app.UIAxesFit);
-                dataMidpoint = length(guidata(app.UIAxesFit))/2;
-                X = plottedData(1:dataMidpoint);
-                Y = smooth(plottedData(dataMidpoint+1:end), app.FitSpan.Value);
-                
-                plot(app.UIAxesFit, X, Y, 'linewidth', 2.0);
-                
-                set(0,'DefaultFigureVisible','off');
-                findpeaks(Y, X, 'MinPeakProminence', app.FitProminence.Value, 'MinPeakHeight', app.FitThreshold.Value);
-                set(0,'DefaultFigureVisible','on');
-                ax2 = gca;
-                children = findobj(ax2.Children, '-not', 'tag', 'Signal');
-                copyobj(children, app.UIAxesFit);
-                delete(ax2.Parent);
-                %TODO: Add filter for rejecting peaks before solvent front
-            end
+        function [X,Y] = findAndLabelPulsePeaks(app)
+            plottedData = guidata(app.UIAxesPulse);
+            dataMidpoint = length(guidata(app.UIAxesPulse))/2;
+            X = plottedData(1:dataMidpoint);
+            Y = smooth(plottedData(dataMidpoint+1:end), app.PulseSpan.Value)-app.PulseBaseline.Value;
+            
+            plot(app.UIAxesPulse, X, Y, 'linewidth', 2.0);
+            yline(app.UIAxesPulse, 0, '-.r');
+            [maxY, maxYIndex] = max(Y);
+            text(app.UIAxesPulse, X(maxYIndex), maxY*.02, 'Baseline', 'HorizontalAlignment', 'center', 'Color', 'r');
+            
+            set(0,'DefaultFigureVisible','off');
+            findpeaks(Y, X, 'MinPeakProminence', app.PulseProminence.Value);
+            set(0,'DefaultFigureVisible','on');
+            ax2 = gca;
+            Peaks = findobj(ax2.Children, '-not', 'tag', 'Signal');
+            copyobj(Peaks, app.UIAxesPulse);
+            delete(ax2.Parent);
 
-            if contains(identifier, 'Pulse')
-                plottedData = guidata(app.UIAxesPulse);
-                dataMidpoint = length(guidata(app.UIAxesPulse))/2;
-                X = plottedData(1:dataMidpoint);
-                Y = smooth(plottedData(dataMidpoint+1:end), app.PulseSpan.Value);
-                
-                plot(app.UIAxesPulse, X, Y, 'linewidth', 2.0);
-                
-                set(0,'DefaultFigureVisible','off');
-                findpeaks(Y, X, 'MinPeakProminence', app.PulseProminence.Value, 'MinPeakHeight', app.PulseThreshold.Value);
-                set(0,'DefaultFigureVisible','on');
-                ax2 = gca;
-                %shading = area(X,Y);
-                Peaks = findobj(ax2.Children, '-not', 'tag', 'Signal');
-                %copyobj(shading, app.UIAxesPulse);
-                copyobj(Peaks, app.UIAxesPulse);
-                %delete(shading.Parent);
-                delete(ax2.Parent);
-
-                %shaded = get(shading,'children');
-                %set(shaded,'FaceAlpha',0.5);
-            end
+            app.UIAxesPulse.YLim = [-1*max(Y)*0.1 max(Y)*1.1];
         end
 
         function updateCompoundListWithFits(app)
@@ -417,44 +489,136 @@ classdef AppV1 < matlab.apps.AppBase
         end
 
         function addNValue(app)
-            plottedData = guidata(app.UIAxesPulse);
-            dataMidpoint = length(guidata(app.UIAxesPulse))/2;
-            
-            X = plottedData(1:dataMidpoint);
-            Y = smooth(plottedData(dataMidpoint+1:end), app.PulseSpan.Value);
+            [X,Y] = findAndLabelPulsePeaks(app);
 
-            [pks,locs] = findpeaks(Y, 'MinPeakProminence', app.PulseProminence.Value, 'MinPeakHeight', app.PulseThreshold.Value);
+            [pks,locs] = findpeaks(Y, 'MinPeakProminence', app.PulseProminence.Value);
             retentionTimes = X(locs);
 
-            NValue = 100;
-            if length(retentionTimes) == 1
-                app.PulseNList.Data(end+1,:) = [app.FlowRate.Value,NValue,0];
+            peakHeight = max(Y);
+            absolutePeakHeightAt60 = (0.6*peakHeight);
+
+            [crossX, crossY] = polyxpoly(X, Y, [0 max(X)], [absolutePeakHeightAt60, absolutePeakHeightAt60]);
+
+            volumeElutedAt60 = crossX*app.FlowRate.Value;
+
+            WHalf60 = diff(volumeElutedAt60);
+
+            WHalf60 = WHalf60(end);
+
+            Vr = retentionTimes*app.FlowRate.Value;
+
+            NValue = 4*(Vr/WHalf60)*(Vr/WHalf60);
+
+            if string(app.StationaryPhaseSwitch.Value) == 'Set Sf'
+                Sf = app.StationaryPhaseRetention.Value;
+            elseif string(app.StationaryPhaseSwitch.Value) == "Coeff."
+                Sf = app.SfCoefficientA.Value + app.SfCoefficientB.Value*F;
             end
+
+            if length(retentionTimes) == 1
+                app.PulseNList.Data(end+1,:) = [app.FlowRate.Value, Sf, NValue,0];
+            end
+
+            XPeakInd = find(X > crossX(end-1) & X < crossX(end));
+
+            XPeak = X(XPeakInd(1):XPeakInd(end));
+            YPeak = Y(XPeakInd(1):XPeakInd(end))';
+
+            XPeak = [crossX(end-1), XPeak, crossX(end)];
+            YPeak = [crossY(end-1), YPeak, crossY(end)];
+
+            patch(app.UIAxesPulse, XPeak, YPeak,'blue','FaceAlpha',.2);
+
+            app.fitCoefficients();
         end
 
         function removeSpecificNValue(app)
-            deletedIndex = app.PulseNList.Data(:,3);
+            deletedIndex = app.PulseNList.Data(:,4);
             for i = 1:height(deletedIndex)
                 positionCheck = deletedIndex(i);
                 if positionCheck == 1
                     app.PulseNList.Data(i,:) = [];
                 end
             end
+            app.fitCoefficients();
+        end
+
+        function fitCoefficients(app)
+            flowRates = app.PulseNList.Data(:,1);
+            SfValues = app.PulseNList.Data(:,2);
+            NValues = app.PulseNList.Data(:,3);
+
+            app.useNButton.Enable = 'off';
+            app.useSfButton.Enable = 'off';
+
+            app.labelNA.Text = 'A: ';
+            app.labelNB.Text = 'B: ';
+            app.labelNC.Text = 'C: ';
+
+            app.labelSfA.Text = 'A: ';
+            app.labelSfB.Text = 'B: ';
+
+            if height(app.PulseNList.Data) > 2
+                [Ncoeff Nerror] = polyfit(flowRates, NValues, 2);
+                [Sfcoeff Sferror] = polyfit(flowRates, SfValues, 1);
+
+                app.labelNA.Text = 'A: ' + string(Ncoeff(3));
+                app.labelNB.Text = 'B: ' + string(Ncoeff(2));
+                app.labelNC.Text = 'C: ' + string(Ncoeff(1));
+
+                app.labelSfA.Text = 'A: ' + string(Sfcoeff(2));
+                app.labelSfB.Text = 'B: ' + string(Sfcoeff(1));
+
+                app.useNButton.Enable = 'on';
+                app.useSfButton.Enable = 'on';
+            end
+        end
+
+        function useNValues(app)
+            if string(app.ColumnEfficiencySwitch.Value) == 'Set N'
+                app.ColumnEfficiencySwitch.Value = 'Coeff.';
+                app.toggleEfficiency();
+            end
+
+            A = str2double(extractAfter(app.labelNA.Text, ' '));
+            app.NCoefficientA.Value = A;
+            B = str2double(extractAfter(app.labelNB.Text, ' '));
+            app.NCoefficientB.Value = B;
+            C = str2double(extractAfter(app.labelNC.Text, ' '));
+            app.NCoefficientC.Value = C;
+        end
+
+        function useSfValues(app)
+            if string(app.StationaryPhaseSwitch.Value) == 'Set Sf'
+                app.StationaryPhaseSwitch.Value = 'Coeff.';
+                app.toggleStationary();
+            end
+
+            A = str2double(extractAfter(app.labelSfA.Text, ' '));
+            app.SfCoefficientA.Value = A;
+            B = str2double(extractAfter(app.labelSfB.Text, ' '));
+            app.SfCoefficientB.Value = B;
         end
 
         function [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime deadVolume] = computeValues(app)
             F = app.FlowRate.Value;
-            if string(app.StationaryPhaseSwitch.Value) == 'Set Value'
+            if string(app.StationaryPhaseSwitch.Value) == 'Set Sf'
                 Sf = app.StationaryPhaseRetention.Value;
-            elseif string(app.StationaryPhaseSwitch.Value) == "Coefficients"
-                Sf = app.SfCoefficientA.Value - app.SfCoefficientB.Value*F;
+            elseif string(app.StationaryPhaseSwitch.Value) == "Coeff."
+                Sf = app.SfCoefficientA.Value + app.SfCoefficientB.Value*F;
             end
             KD = cell2mat(app.compoundList.Data(:,2));
             if app.AscDesc.Value == 'Upper'
                 KD = 1./KD;
             end
             Vc = app.ColumnVolume.Value;
-            Ncup = app.ColumnEfficiencyN.Value;
+
+            if string(app.columnEfficiencySwitch.Value) == 'Set N'
+                Ncup = app.ColumnEfficiencyN.Value;
+            elseif string(app.ColumnEfficiencySwitch.Value) == 'Coeff.'
+                Ncup = app.NCoefficientA.Value + app.NCoefficientB.Value*F + app.NCoefficientC.Value*F*F;
+            end
+
             C0 = cell2mat(app.compoundList.Data(:,3));
             Vinj = app.InjectionVolume.Value;
             elutionTime = app.ElutionDuration.Value;
@@ -492,7 +656,6 @@ classdef AppV1 < matlab.apps.AppBase
                 peakPositions(i) = round(telute(peakPositions(i)), 2);
             end
         end
-
 
        function CUPPrediction(app)
             [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime deadVolume] = computeValues(app);
@@ -630,7 +793,6 @@ classdef AppV1 < matlab.apps.AppBase
 
                 app.UIAxesExtrusion.XLim = [0 extrusionTime];
                 app.UIAxesExtrusion.YLim = [0 maxHeight*1.1];
-
             end
             
             if contains(identifier, 'Dual')
@@ -664,7 +826,6 @@ classdef AppV1 < matlab.apps.AppBase
                 stationaryPhaseVolume = dualTime/F;
                 
                 plot(app.UIAxesDual, telute, Cout, 'linewidth', 2.0);
-                
                 
                 if app.DualLinesCheckbox.Value
                     xline(app.UIAxesDual, (Vcm+deadVolume)/F, '-.r', dualSwitchLabel);
@@ -742,7 +903,6 @@ classdef AppV1 < matlab.apps.AppBase
                 
                 app.UIAxesMultiPosition.XLim = [0 telute(end)];
                 app.UIAxesMultiPosition.YLim = [0 1];
-                
             end
             
             
@@ -762,7 +922,6 @@ classdef AppV1 < matlab.apps.AppBase
             end
 
             app.addRetentionElutionToTable(peakPositions);
-
         end
     end
 
@@ -771,7 +930,6 @@ classdef AppV1 < matlab.apps.AppBase
 
         % Create UIFigure and components
         function createComponents(app)
-
             
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
@@ -786,20 +944,20 @@ classdef AppV1 < matlab.apps.AppBase
             app.ElutionDurationLabelUnits = uilabel(app.UIFigure);
             app.ElutionDurationLabelUnits.HorizontalAlignment = 'center';
             app.ElutionDurationLabelUnits.WordWrap = 'on';
-            app.ElutionDurationLabelUnits.Position = [487 406 34 22];
+            app.ElutionDurationLabelUnits.Position = [487 416 34 22];
             app.ElutionDurationLabelUnits.Text = 'min';
             
             % Create FlowRateLabelUnits
             app.FlowRateLabelUnits = uilabel(app.UIFigure);
             app.FlowRateLabelUnits.HorizontalAlignment = 'right';
-            app.FlowRateLabelUnits.Position = [123 406 46 22];
+            app.FlowRateLabelUnits.Position = [123 416 46 22];
             app.FlowRateLabelUnits.Text = 'mL/min';
             
             % Create FlowRateLabel
             app.FlowRateLabel = uilabel(app.UIFigure);
             app.FlowRateLabel.HorizontalAlignment = 'center';
             app.FlowRateLabel.WordWrap = 'on';
-            app.FlowRateLabel.Position = [26 403 48 28];
+            app.FlowRateLabel.Position = [26 413 48 28];
             app.FlowRateLabel.Text = 'Flow Rate';
             
             % Create FlowRate
@@ -807,20 +965,20 @@ classdef AppV1 < matlab.apps.AppBase
             app.FlowRate.LowerLimitInclusive = 'off';
             app.FlowRate.Limits = [0 Inf];
             app.FlowRate.RoundFractionalValues = 'off';
-            app.FlowRate.Position = [73 406 51 22];
+            app.FlowRate.Position = [73 416 51 22];
             app.FlowRate.Value = 5;
             
             % Create ColumnVolumeLabelUnits
             app.ColumnVolumeLabelUnits = uilabel(app.UIFigure);
             app.ColumnVolumeLabelUnits.HorizontalAlignment = 'right';
-            app.ColumnVolumeLabelUnits.Position = [319 406 25 22];
+            app.ColumnVolumeLabelUnits.Position = [310 416 25 22];
             app.ColumnVolumeLabelUnits.Text = 'mL';
             
             % Create ColumnVolumeLabel
             app.ColumnVolumeLabel = uilabel(app.UIFigure);
             app.ColumnVolumeLabel.HorizontalAlignment = 'center';
             app.ColumnVolumeLabel.WordWrap = 'on';
-            app.ColumnVolumeLabel.Position = [213 401 65 33];
+            app.ColumnVolumeLabel.Position = [204 411 65 33];
             app.ColumnVolumeLabel.Text = 'Column Volume';
             
             % Create ColumnVolume
@@ -828,46 +986,46 @@ classdef AppV1 < matlab.apps.AppBase
             app.ColumnVolume.LowerLimitInclusive = 'off';
             app.ColumnVolume.Limits = [0 Inf];
             app.ColumnVolume.RoundFractionalValues = 'off';
-            app.ColumnVolume.Position = [277 406 44 22];
+            app.ColumnVolume.Position = [268 416 44 22];
             app.ColumnVolume.Value = 81;
             
             % Create ElutionDurationLabel
             app.ElutionDurationLabel = uilabel(app.UIFigure);
             app.ElutionDurationLabel.HorizontalAlignment = 'center';
             app.ElutionDurationLabel.WordWrap = 'on';
-            app.ElutionDurationLabel.Position = [378 403 55 30];
+            app.ElutionDurationLabel.Position = [378 413 55 30];
             app.ElutionDurationLabel.Text = 'Elution Duration';
             
             % Create ElutionDuration
             app.ElutionDuration = uieditfield(app.UIFigure, 'numeric');
-            app.ElutionDuration.Position = [437 406 51 22];
+            app.ElutionDuration.Position = [437 416 51 22];
             app.ElutionDuration.Value = 60;
             
             % Create InjectionVolumeLabelUnits
             app.InjectionVolumeLabelUnits = uilabel(app.UIFigure);
             app.InjectionVolumeLabelUnits.HorizontalAlignment = 'right';
-            app.InjectionVolumeLabelUnits.Position = [656 406 25 22];
+            app.InjectionVolumeLabelUnits.Position = [656 416 25 22];
             app.InjectionVolumeLabelUnits.Text = 'mL';
             
             % Create InjectionVolumeLabel
             app.InjectionVolumeLabel = uilabel(app.UIFigure);
             app.InjectionVolumeLabel.HorizontalAlignment = 'center';
             app.InjectionVolumeLabel.WordWrap = 'on';
-            app.InjectionVolumeLabel.Position = [550 403 65 30];
+            app.InjectionVolumeLabel.Position = [550 413 65 30];
             app.InjectionVolumeLabel.Text = 'Injection Volume';
             
             % Create InjectionVolume
             app.InjectionVolume = uieditfield(app.UIFigure, 'numeric');
             app.InjectionVolume.LowerLimitInclusive = 'off';
             app.InjectionVolume.Limits = [0 Inf];
-            app.InjectionVolume.Position = [614 406 44 22];
+            app.InjectionVolume.Position = [614 416 44 22];
             app.InjectionVolume.Value = 1;
             
             % Create StationaryPhaseRetentionLabel
             app.StationaryPhaseRetentionLabel = uilabel(app.UIFigure);
             app.StationaryPhaseRetentionLabel.HorizontalAlignment = 'center';
             app.StationaryPhaseRetentionLabel.WordWrap = 'on';
-            app.StationaryPhaseRetentionLabel.Position = [202 316 96 57];
+            app.StationaryPhaseRetentionLabel.Position = [10 350 180 57];
             app.StationaryPhaseRetentionLabel.Text = 'Stationary Phase Retention';
             
             % Create StationaryPhaseRetention
@@ -875,40 +1033,61 @@ classdef AppV1 < matlab.apps.AppBase
             app.StationaryPhaseRetention.LowerLimitInclusive = 'off';
             app.StationaryPhaseRetention.UpperLimitInclusive = 'off';
             app.StationaryPhaseRetention.Limits = [0 1];
-            app.StationaryPhaseRetention.Position = [300 333 51 22];
+            app.StationaryPhaseRetention.Position = [72 345 51 22];
             app.StationaryPhaseRetention.Value = 0.75;
 
-            % Create Switch
+            % Create StationaryPhaseSwitch
             app.StationaryPhaseSwitch = uiswitch(app.UIFigure, 'slider', 'ValueChangedFcn',@(src,event) toggleStationary(app));
-            app.StationaryPhaseSwitch.Items = {'Set Value', 'Coefficients'};
-            app.StationaryPhaseSwitch.Position = [70 338 45 20];
-            app.StationaryPhaseSwitch.Value = 'Set Value';
-            set(app.StationaryPhaseSwitch, 'Tooltip', 'Coefficients must be obtained from the literature for each solvent system. In this setting, Sf = A - (B x flowrate)')
+            app.StationaryPhaseSwitch.Items = {'Set Sf', 'Coeff.'};
+            app.StationaryPhaseSwitch.Position = [75 320 45 20];
+            app.StationaryPhaseSwitch.Value = 'Set Sf';
+            set(app.StationaryPhaseSwitch, 'Tooltip', 'Coefficients must be obtained from pulse tests for each solvent system at various flow rates.')
+
+            % Create ColumnEfficiencyNLabel
+            app.ColumnEfficiencyNLabel = uilabel(app.UIFigure);
+            app.ColumnEfficiencyNLabel.HorizontalAlignment = 'center';
+            app.ColumnEfficiencyNLabel.WordWrap = 'on';
+            app.ColumnEfficiencyNLabel.Position = [230 350 200 57];
+            app.ColumnEfficiencyNLabel.Text = 'Column Efficiency (N)';
+
+            % Create ColumnEfficiencySwitch
+            app.ColumnEfficiencySwitch = uiswitch(app.UIFigure, 'slider', 'ValueChangedFcn',@(src,event) toggleEfficiency(app));
+            app.ColumnEfficiencySwitch.Items = {'Set N', 'Coeff.'};
+            app.ColumnEfficiencySwitch.Position = [308 320 45 20];
+            app.ColumnEfficiencySwitch.Value = 'Set N';
+            set(app.ColumnEfficiencySwitch, 'Tooltip', 'Coefficients must be obtained from pulse tests for each solvent system at various flow rates.')
+            
+            % Create ColumnEfficiencyN
+            app.ColumnEfficiencyN = uieditfield(app.UIFigure, 'numeric');
+            app.ColumnEfficiencyN.UpperLimitInclusive = 'off';
+            app.ColumnEfficiencyN.Limits = [1 Inf];
+            app.ColumnEfficiencyN.Position = [305 345 51 22];
+            app.ColumnEfficiencyN.Value = 400;
 
             % Create ColumnDeadVolumeLabelUnits
             app.ColumnDeadVolumeLabelUnits = uilabel(app.UIFigure);
             app.ColumnDeadVolumeLabelUnits.HorizontalAlignment = 'center';
             app.ColumnDeadVolumeLabelUnits.WordWrap = 'on';
-            app.ColumnDeadVolumeLabelUnits.Position = [677 338 24 14];
+            app.ColumnDeadVolumeLabelUnits.Position = [640 350 24 14];
             app.ColumnDeadVolumeLabelUnits.Text = 'mL';
             
             % Create ColumnDeadVolumeLabel
             app.ColumnDeadVolumeLabel = uilabel(app.UIFigure);
             app.ColumnDeadVolumeLabel.HorizontalAlignment = 'center';
             app.ColumnDeadVolumeLabel.WordWrap = 'on';
-            app.ColumnDeadVolumeLabel.Position = [530 328 89 34];
+            app.ColumnDeadVolumeLabel.Position = [545 362 150 34];
             app.ColumnDeadVolumeLabel.Text = 'Column Dead Volume';
             
             % Create ColumnDeadVolume
             app.ColumnDeadVolume = uieditfield(app.UIFigure, 'numeric');
             app.ColumnDeadVolume.Limits = [0 Inf];
-            app.ColumnDeadVolume.Position = [628 334 44 22];
+            app.ColumnDeadVolume.Position = [592 345 45 22];
 
             %Create includeInjectionVolCheckbox
             app.includeInjectionVolCheckbox = uicheckbox(app.UIFigure,...
                 'Text', 'Include Inj. Vol.?',...
                 'Value', 1,...
-                'Position', [560 305 120 15]);
+                'Position', [568 322 120 15]);
             
             % Create UITable
             initialRows = {'Compound 1' 1 1 0 0; 'Compound 2' 2 1 0 0};
@@ -962,7 +1141,8 @@ classdef AppV1 < matlab.apps.AppBase
             % Create Switch
             app.VolumeTimeSwitch = uiswitch(app.UIFigure, 'slider', 'ValueChangedFcn',@(src,event) toggleVolumeTime(app));
             app.VolumeTimeSwitch.Items = {'Time', 'Volume'};
-            app.VolumeTimeSwitch.Position = [420 338 45 20];
+            app.VolumeTimeSwitch.Position = [475 325 45 20];
+            app.VolumeTimeSwitch.Orientation = 'vertical';
             app.VolumeTimeSwitch.Value = 'Time';
             app.VolumeTimeSwitch.Tag = 'Switch';
 
@@ -1233,7 +1413,7 @@ classdef AppV1 < matlab.apps.AppBase
             app.UIAxesPulse.Position = [8 10 450 430];
 
             % Create FindPulsePeaksButton
-            app.FindPulsePeaksButton = uibutton(app.PulseTab, 'ButtonPushedFcn',@(src,event) findAndLabelPeaks(app));
+            app.FindPulsePeaksButton = uibutton(app.PulseTab, 'ButtonPushedFcn',@(src,event) findAndLabelPulsePeaks(app));
             app.FindPulsePeaksButton.Position = [415 445 68 23];
             app.FindPulsePeaksButton.Text = 'Find Peaks';
             app.FindPulsePeaksButton.Tag = 'FindPulse';
@@ -1268,26 +1448,107 @@ classdef AppV1 < matlab.apps.AppBase
             app.PulseProminence.Position = [267 445 29 22];
             app.PulseProminence.Value = 5;
 
-            % Create PulseThresholdLabel
-            app.PulseThresholdLabel = uilabel(app.PulseTab);
-            app.PulseThresholdLabel.HorizontalAlignment = 'right';
-            app.PulseThresholdLabel.Position = [297 445 65 22];
-            app.PulseThresholdLabel.Text = 'Threshold';
+            % Create PulseBaselineLabel
+            app.PulseBaselineLabel = uilabel(app.PulseTab);
+            app.PulseBaselineLabel.HorizontalAlignment = 'right';
+            app.PulseBaselineLabel.Position = [297 445 65 22];
+            app.PulseBaselineLabel.Text = 'Baseline';
 
-            % Create PulseThreshold
-            app.PulseThreshold = uieditfield(app.PulseTab, 'numeric');
-            app.PulseThreshold.Position = [367 445 29 22];
-            app.PulseThreshold.Value = 5;
+            % Create PulseBaseline
+            app.PulseBaseline = uieditfield(app.PulseTab, 'numeric');
+            app.PulseBaseline.Position = [367 445 29 22];
+            app.PulseBaseline.Value = 5;
+
+            % Create PulseNTableListLabel
+            app.PulseNTableListLabel = uilabel(app.PulseTab);
+            app.PulseNTableListLabel.HorizontalAlignment = 'center';
+            app.PulseNTableListLabel.FontSize = 18;
+            app.PulseNTableListLabel.FontWeight = 'bold';
+            app.PulseNTableListLabel.Position = [515 412 137 24];
+            app.PulseNTableListLabel.Text = 'Pulse Test List';
 
             % Create PulseNTable
             app.PulseNList = uitable(app.PulseTab,'CellEdit',@(src,event) removeSpecificNValue(app), ...
-                "ColumnName",{'Flow Rate'; 'N'; 'Del?'}, ...
-                "ColumnFormat",{[] [] 'logical'});
+                "ColumnWidth",{82, 44, 58, 50}, ...
+                "ColumnName",{'Flow Rate'; 'Sf'; 'N'; 'Del?'}, ...
+                "ColumnFormat",{[] [] [] 'logical'});
             app.PulseNList.RowName = {};
             addStyle(app.PulseNList, tableStyle);
             app.PulseNList.ColumnSortable = true;
             app.PulseNList.ColumnEditable = true;
-            app.PulseNList.Position = [473 232 220 200];
+            app.PulseNList.Position = [473 204 220 200];
+
+            % Create regressionHeader
+            app.regressionHeader = uilabel(app.PulseTab);
+            app.regressionHeader.HorizontalAlignment = 'left';
+            app.regressionHeader.FontSize = 12;
+            app.regressionHeader.Position = [475 175 137 24];
+            app.regressionHeader.Text = 'Regressions:';
+
+            % Create NEquationLabel
+            app.NEquationLabel = uilabel(app.PulseTab);
+            app.NEquationLabel.HorizontalAlignment = 'left';
+            app.NEquationLabel.FontSize = 12;
+            app.NEquationLabel.Interpreter = 'latex';
+            app.NEquationLabel.Position = [475 150 150 24];
+            app.NEquationLabel.Text = '$N = A + BF + CF^2$';
+            set(app.NEquationLabel, 'Tooltip', 'B coefficient is typically negative.')
+            
+            % Create useNButton
+            app.useNButton = uibutton(app.PulseTab, 'ButtonPushedFcn',@(src,event) useNValues(app));
+            app.useNButton.Position = [625 150 68 23];
+            app.useNButton.Text = 'Use Values';
+            app.useNButton.Tag = 'UseN';
+            
+            % Create labelNA
+            app.labelNA = uilabel(app.PulseTab);
+            app.labelNA.HorizontalAlignment = 'left';
+            app.labelNA.FontSize = 12;
+            app.labelNA.Position = [475 120 150 24];
+            app.labelNA.Text = 'A: ';
+            
+            % Create labelNB
+            app.labelNB = uilabel(app.PulseTab);
+            app.labelNB.HorizontalAlignment = 'left';
+            app.labelNB.FontSize = 12;
+            app.labelNB.Position = [550 120 150 24];
+            app.labelNB.Text = 'B: ';
+            
+            % Create labelNC
+            app.labelNC = uilabel(app.PulseTab);
+            app.labelNC.HorizontalAlignment = 'left';
+            app.labelNC.FontSize = 12;
+            app.labelNC.Position = [625 120 150 24];
+            app.labelNC.Text = 'C: ';
+            
+            % Create SfEquationLabel
+            app.SfEquationLabel = uilabel(app.PulseTab);
+            app.SfEquationLabel.HorizontalAlignment = 'left';
+            app.SfEquationLabel.FontSize = 12;
+            app.SfEquationLabel.Interpreter = 'latex';
+            app.SfEquationLabel.Position = [475 85 150 24];
+            app.SfEquationLabel.Text = '$S_{f} = A + BF$';
+            set(app.SfEquationLabel, 'Tooltip', 'B coefficient is typically negative.')
+
+            % Create useSfButton
+            app.useSfButton = uibutton(app.PulseTab, 'ButtonPushedFcn',@(src,event) useSfValues(app));
+            app.useSfButton.Position = [625 85 68 23];
+            app.useSfButton.Text = 'Use Values';
+            app.useSfButton.Tag = 'UseSf';
+
+            % Create labelSfA
+            app.labelSfA = uilabel(app.PulseTab);
+            app.labelSfA.HorizontalAlignment = 'left';
+            app.labelSfA.FontSize = 12;
+            app.labelSfA.Position = [475 55 150 24];
+            app.labelSfA.Text = 'A: ';
+
+            % Create labelSfB
+            app.labelSfB = uilabel(app.PulseTab);
+            app.labelSfB.HorizontalAlignment = 'left';
+            app.labelSfB.FontSize = 12;
+            app.labelSfB.Position = [550 55 150 24];
+            app.labelSfB.Text = 'B: ';
 
             % Create FittingTab
             app.FitTab = uitab(app.TabGroup);
@@ -1343,7 +1604,7 @@ classdef AppV1 < matlab.apps.AppBase
             app.FitThreshold.Value = 5;
 
             % Create FindFitPeaksButton
-            app.FindFitPeaksButton = uibutton(app.FitTab, 'ButtonPushedFcn',@(src,event) findAndLabelPeaks(app));
+            app.FindFitPeaksButton = uibutton(app.FitTab, 'ButtonPushedFcn',@(src,event) findAndLabelFitPeaks(app));
             app.FindFitPeaksButton.Position = [415 445 68 23];
             app.FindFitPeaksButton.Text = 'Find Peaks';
             app.FindFitPeaksButton.Tag = 'FindFit';
@@ -1365,20 +1626,6 @@ classdef AppV1 < matlab.apps.AppBase
             app.Info = uitab(app.TabGroup);
             app.Info.Title = 'App Info';
             app.Info.Tag = 'Info';
-
-            % Create ColumnEfficiencyNLabel
-            app.ColumnEfficiencyNLabel = uilabel(app.Info);
-            app.ColumnEfficiencyNLabel.HorizontalAlignment = 'center';
-            app.ColumnEfficiencyNLabel.WordWrap = 'on';
-            app.ColumnEfficiencyNLabel.Position = [33 201 91 28];
-            app.ColumnEfficiencyNLabel.Text = 'Column Efficiency (N)';
-            
-            % Create ColumnEfficiencyN
-            app.ColumnEfficiencyN = uieditfield(app.Info, 'numeric');
-            app.ColumnEfficiencyN.UpperLimitInclusive = 'off';
-            app.ColumnEfficiencyN.Limits = [1 Inf];
-            app.ColumnEfficiencyN.Position = [78 204 51 22];
-            app.ColumnEfficiencyN.Value = 400;
 
             app.InfoTitle = uilabel(app.Info);
             app.InfoTitle.HorizontalAlignment = 'center';
