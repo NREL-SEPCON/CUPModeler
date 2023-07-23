@@ -167,8 +167,6 @@ classdef AppV1 < matlab.apps.AppBase
                     app.SwitchTimeList.Data(i,2) = {cell2mat(app.SwitchTimeList.Data(i,2))*F};
                 end
 
-                CUPPrediction(app);
-
             elseif string(app.VolumeTimeSwitch.Value) == 'Time'
                 app.ElutionDurationLabel.Text = 'Elution Duration';
                 app.ElutionDurationLabelUnits.Text = 'min';
@@ -197,9 +195,8 @@ classdef AppV1 < matlab.apps.AppBase
                 for i = 1:height(app.SwitchTimeList.Data)
                     app.SwitchTimeList.Data(i,2) = {cell2mat(app.SwitchTimeList.Data(i,2))/F};
                 end
-
-                CUPPrediction(app);
             end
+            CUPPrediction(app);
         end
 
         function toggleStationary(app)
@@ -246,6 +243,7 @@ classdef AppV1 < matlab.apps.AppBase
                 app.SfCoefficientB.Position = [120 345 51 22];
                 app.SfCoefficientB.Value = -0.1426;
             end
+            app.CUPPrediction();
         end
 
         function toggleEfficiency(app)
@@ -264,38 +262,39 @@ classdef AppV1 < matlab.apps.AppBase
                 app.ColumnEfficiencyN.Limits = [1 Inf];
                 app.ColumnEfficiencyN.Position = [305 345 51 22];
                 app.ColumnEfficiencyN.Value = 400;
-
+                
             elseif string(app.ColumnEfficiencySwitch.Value) == 'Coeff.'
-
+                
                 delete(app.ColumnEfficiencyN);
-
+                
                 app.NCoefficientALabel = uilabel(app.UIFigure);
                 app.NCoefficientALabel.HorizontalAlignment = 'center';
                 app.NCoefficientALabel.Position = [205 345 20 20];
                 app.NCoefficientALabel.Text = 'A';
-
+                
                 app.NCoefficientA = uieditfield(app.UIFigure, 'numeric');
                 app.NCoefficientA.Position = [225 345 51 22];
                 app.NCoefficientA.Value = 371.239;
-
+                
                 app.NCoefficientBLabel = uilabel(app.UIFigure);
                 app.NCoefficientBLabel.HorizontalAlignment = 'center';
                 app.NCoefficientBLabel.Position = [285 345 20 20];
                 app.NCoefficientBLabel.Text = 'B';
-
+                
                 app.NCoefficientB = uieditfield(app.UIFigure, 'numeric');
                 app.NCoefficientB.Position = [305 345 51 22];
                 app.NCoefficientB.Value = -7.2042;
-
+                
                 app.NCoefficientCLabel = uilabel(app.UIFigure);
                 app.NCoefficientCLabel.HorizontalAlignment = 'center';
                 app.NCoefficientCLabel.Position = [365 345 20 20];
                 app.NCoefficientCLabel.Text = 'C';
-
+                
                 app.NCoefficientC = uieditfield(app.UIFigure, 'numeric');
                 app.NCoefficientC.Position = [385 345 51 22];
                 app.NCoefficientC.Value = 0.14807;
             end
+            app.CUPPrediction();
         end
 
         function addCompoundButtonPushed(app)
@@ -601,6 +600,8 @@ classdef AppV1 < matlab.apps.AppBase
             app.NCoefficientB.Value = B;
             C = str2double(extractAfter(app.labelNC.Text, ' '));
             app.NCoefficientC.Value = C;
+
+            app.CUPPrediction();
         end
 
         function useSfValues(app)
@@ -613,6 +614,8 @@ classdef AppV1 < matlab.apps.AppBase
             app.SfCoefficientA.Value = A;
             B = str2double(extractAfter(app.labelSfB.Text, ' '));
             app.SfCoefficientB.Value = B;
+
+            app.CUPPrediction();
         end
 
         function [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime deadVolume] = computeValues(app)
@@ -628,10 +631,10 @@ classdef AppV1 < matlab.apps.AppBase
             end
             Vc = app.ColumnVolume.Value;
 
-            if string(app.columnEfficiencySwitch.Value) == 'Set N'
+            if string(app.ColumnEfficiencySwitch.Value) == 'Set N'
                 Ncup = app.ColumnEfficiencyN.Value;
             elseif string(app.ColumnEfficiencySwitch.Value) == 'Coeff.'
-                Ncup = app.NCoefficientA.Value + app.NCoefficientB.Value*F + app.NCoefficientC.Value*F*F;
+                Ncup = round(app.NCoefficientA.Value + app.NCoefficientB.Value*F + app.NCoefficientC.Value*F*F);
             end
 
             C0 = cell2mat(app.compoundList.Data(:,3));
@@ -655,9 +658,9 @@ classdef AppV1 < matlab.apps.AppBase
             end
         end
 
-        function addRetentionElutionToTable(app, peakPosition)
-            for i = 1:length(peakPosition)
-                app.compoundList.Data(i,4) = {peakPosition(i)};
+        function addRetentionElutionToTable(app, peakPositions)
+            for i = 1:length(peakPositions)
+                app.compoundList.Data(i,4) = {peakPositions(i)};
             end
         end
 
@@ -1056,20 +1059,22 @@ classdef AppV1 < matlab.apps.AppBase
             app.StationaryPhaseSwitch.Items = {'Set Sf', 'Coeff.'};
             app.StationaryPhaseSwitch.Position = [75 320 45 20];
             app.StationaryPhaseSwitch.Value = 'Set Sf';
+            app.StationaryPhaseSwitch.Tag = 'Switch';
             set(app.StationaryPhaseSwitch, 'Tooltip', 'Coefficients must be obtained from pulse tests for each solvent system at various flow rates.')
-
+            
             % Create ColumnEfficiencyNLabel
             app.ColumnEfficiencyNLabel = uilabel(app.UIFigure);
             app.ColumnEfficiencyNLabel.HorizontalAlignment = 'center';
             app.ColumnEfficiencyNLabel.WordWrap = 'on';
             app.ColumnEfficiencyNLabel.Position = [230 350 200 57];
             app.ColumnEfficiencyNLabel.Text = 'Column Efficiency (N)';
-
+            
             % Create ColumnEfficiencySwitch
             app.ColumnEfficiencySwitch = uiswitch(app.UIFigure, 'slider', 'ValueChangedFcn',@(src,event) toggleEfficiency(app));
             app.ColumnEfficiencySwitch.Items = {'Set N', 'Coeff.'};
             app.ColumnEfficiencySwitch.Position = [308 320 45 20];
             app.ColumnEfficiencySwitch.Value = 'Set N';
+            app.ColumnEfficiencySwitch.Tag = 'Switch';
             set(app.ColumnEfficiencySwitch, 'Tooltip', 'Coefficients must be obtained from pulse tests for each solvent system at various flow rates.')
             
             % Create ColumnEfficiencyN
