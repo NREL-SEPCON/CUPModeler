@@ -91,6 +91,8 @@ classdef AppV1 < matlab.apps.AppBase
         UIAxesPulse                   matlab.ui.control.UIAxes
         ImportPulseTraceButton        matlab.ui.control.Button
         AddPulseNValue                matlab.ui.control.Button
+        SavePulseList                 matlab.ui.control.Button
+        OpenPulseList                 matlab.ui.control.Button
         PulseSpan                     matlab.ui.control.NumericEditField
         PulseSpanLabel                matlab.ui.control.Label
         PulseProminence               matlab.ui.control.NumericEditField
@@ -352,6 +354,19 @@ classdef AppV1 < matlab.apps.AppBase
             [filename] = uigetfile('.xls');
             importedTable = array2table(readcell(filename));
             app.SwitchTimeList.Data = table2cell(importedTable);
+        end
+
+        function savePulseList(app)
+            filename = ['Pulse List ' + string(datetime) + '.xls'];
+            [filename] = uiputfile('.xls', 'Save pulse list', filename);
+            pulseListTableContents = get(app.PulseNList, 'Data');
+            writematrix(pulseListTableContents, filename);
+        end
+
+        function openPulseList(app)
+            [filename] = uigetfile('.xls');
+            app.PulseNList.Data = cell2mat(readcell(filename));
+            app.fitCoefficients();
         end
 
         function addCycleButtonPushed(app)
@@ -1423,6 +1438,18 @@ classdef AppV1 < matlab.apps.AppBase
             app.AddPulseNValue.Position = [490 445 68 23];
             app.AddPulseNValue.Text = 'Add N';
             app.AddPulseNValue.Tag = 'AddN';
+
+            % Create SavePulseList
+            app.SavePulseList = uibutton(app.PulseTab, 'ButtonPushedFcn',@(src,event) savePulseList(app));
+            app.SavePulseList.Position = [606 445 40 23];
+            app.SavePulseList.Text = 'Save';
+            app.SavePulseList.Tag = 'saveN';
+
+            % Create OpenPulseList
+            app.OpenPulseList = uibutton(app.PulseTab, 'ButtonPushedFcn',@(src,event) openPulseList(app));
+            app.OpenPulseList.Position = [653 445 40 23];
+            app.OpenPulseList.Text = 'Open';
+            app.OpenPulseList.Tag = 'OpenN';
 
             % Create PulseSpanLabel
             app.PulseSpanLabel = uilabel(app.PulseTab);
