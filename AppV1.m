@@ -129,6 +129,7 @@ classdef AppV1 < matlab.apps.AppBase
         InfoTitle                     matlab.ui.control.Label
         InfoVersion                   matlab.ui.control.Label
         InfoCitation                  matlab.ui.control.Label
+        cupPaper                      matlab.ui.control.Hyperlink
         InfoCredits                   matlab.ui.control.Label
     end
     
@@ -391,19 +392,18 @@ classdef AppV1 < matlab.apps.AppBase
 
             [importedData] = xlsread(filename)';
 
+            % Create dataPreviewTable
             if contains(identifier, 'Pulse')
-                % Create dataPreviewTable
                 app.dataPreviewTable = uitable(app.PulseTab);
             elseif contains(identifier, 'Fit')
                 app.dataPreviewTable = uitable(app.FitTab);
             end
             app.dataPreviewTable.Data = dataPreview;
-            app.dataPreviewTable.Position = [20 20 680 400];
-            app.dataPreviewTable.ColumnWidth = 'fit';
+            app.dataPreviewTable.Position = [20 25 680 400];
+            app.dataPreviewTable.ColumnWidth = '1x';
 
             try
                 selectedFields = str2num(cell2mat(inputdlg({'Choose column of X axis data:', 'Choose column of Y axis data'},'Data Selection')));
-                
             catch
                 delete(app.dataPreviewTable);
             end
@@ -416,12 +416,9 @@ classdef AppV1 < matlab.apps.AppBase
                 
                 if contains(identifier, 'Fit')
                     app.FitSpan.Limits = [2 length(Y)/2];
-                    
                     guidata(app.UIAxesFit, [X,Y]);
                     plot(app.UIAxesFit, X, Y, 'linewidth', 2.0);
-                end
-    
-                if contains(identifier, 'Pulse')                
+                elseif contains(identifier, 'Pulse')                
                     guidata(app.UIAxesPulse, [X,Y]);
                     plot(app.UIAxesPulse, X, Y, 'linewidth', 2.0);
                 end
@@ -444,9 +441,8 @@ classdef AppV1 < matlab.apps.AppBase
             children = findobj(ax2.Children, '-not', 'tag', 'Signal');
             copyobj(children, app.UIAxesFit);
             delete(ax2.Parent);
-            %TODO: Add filter for rejecting peaks before solvent front
         end
-
+        
         function [X,Y] = findAndLabelPulsePeaks(app)
             plottedData = guidata(app.UIAxesPulse);
             dataMidpoint = length(guidata(app.UIAxesPulse))/2;
@@ -465,27 +461,55 @@ classdef AppV1 < matlab.apps.AppBase
             Peaks = findobj(ax2.Children, '-not', 'tag', 'Signal');
             copyobj(Peaks, app.UIAxesPulse);
             delete(ax2.Parent);
-
+            
             app.UIAxesPulse.YLim = [-1*max(Y)*0.1 max(Y)*1.1];
         end
-
+        
         function updateCompoundListWithFits(app)
-            F = app.FlowRate.Value;
-            Vm = (1-app.StationaryPhaseRetention.Value)*app.ColumnVolume.Value;
-            Vs = app.StationaryPhaseRetention.Value*app.ColumnVolume.Value;
-            Vd = app.ColumnDeadVolume.Value;
+            cla(app.UIAxesFit);
+            app.findAndLabelFitPeaks();
+            app.VolumeTimeSwitch.Value = 'Time';
+            
+            [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime deadVolume] = computeValues(app);
+            
+            [Vspan Cout X Y] = CupV6(Sf, KD, Vc, Ncup, Vcm, C0, Vinj);
+            
+            [Vspan, Cout, Xtot, Ytot, Vbc] = EECCC_V8(KD, Vc, Sf, X, Y);
+            
+            Vbc = Vbc + deadVolume;
+            sweepTime = Vbc(2)/F;
+            
+            Vm = (1-Sf)*Vc;
+            Vs = Sf*Vc;
             
             plottedData = guidata(app.UIAxesFit);
             dataMidpoint = length(guidata(app.UIAxesFit))/2;
             
             X = plottedData(1:dataMidpoint);
             Y = smooth(plottedData(dataMidpoint+1:end), app.FitSpan.Value);
-
+            
             [pks,locs] = findpeaks(Y, 'MinPeakProminence', app.FitProminence.Value, 'MinPeakHeight', app.FitThreshold.Value);
             retentionTimes = X(locs);
+            
+            solventFrontTime = Vm/F;
+            xline(app.UIAxesFit, solventFrontTime, '-.r', 'Solvent Front')
 
-            partitionCoefficients = ((F*retentionTimes)-Vm+Vd)/Vs; %TODO: take into account sweep volume and extrusion for partition coefficient values
+            rejectedPeaks = retentionTimes < solventFrontTime;
 
+            acceptedPeaks = retentionTimes(~rejectedPeaks);
+            %TODO: Add filter for rejecting peaks before solvent front
+
+            elutionAndSweepPeakTimesLogical = acceptedPeaks < sweepTime;
+            extrusionPeakTimesLogical = acceptedPeaks > sweepTime;
+            
+            elutionAndSweepPeakTimes = retentionTimes(elutionAndSweepPeakTimesLogical);
+            extrusionPeakTimes = retentionTimes(extrusionPeakTimesLogical);
+            
+            elutionAndSweepPartitionCoefficients = ((F*elutionAndSweepPeakTimes)-Vm-(deadVolume/2))/Vs;
+            extrusionPartitionCoefficients = (Vcm+deadVolume)/(Vc+Vcm+deadVolume-(extrusionPeakTimes*F));
+            
+            partitionCoefficients = [elutionAndSweepPartitionCoefficients extrusionPartitionCoefficients];
+            
             for i = 1:height(app.compoundList.Data)
                 app.removeCompoundButtonPushed()
             end
@@ -1664,30 +1688,35 @@ classdef AppV1 < matlab.apps.AppBase
             app.InfoTitle.FontSize = 24;
             app.InfoTitle.FontWeight = 'bold';
             app.InfoTitle.Position = [140 320 500 50];
-            app.InfoTitle.Text = 'CUP Modeler (Temporary Name)';
+            app.InfoTitle.Text = 'CUP Modeler';
 
             app.InfoVersion = uilabel(app.Info);
             app.InfoVersion.HorizontalAlignment = 'center';
             app.InfoVersion.FontSize = 18;
-            app.InfoVersion.Position = [140 290 500 50];
-            app.InfoVersion.Text = 'Version 0.1 alpha';
+            app.InfoVersion.Position = [140 305 500 25];
+            app.InfoVersion.Text = 'Version 1.0';
 
             app.InfoCitation = uilabel(app.Info);
             app.InfoCitation.HorizontalAlignment = 'center';
             app.InfoCitation.FontSize = 12;
-            app.InfoCitation.Position = [140 270 500 50];
-            app.InfoCitation.Text = 'To learn more, check out <insert citation details here>';
-
+            app.InfoCitation.Position = [85 270 500 20];
+            app.InfoCitation.Text = 'To learn more, ';
+            
             app.InfoCredits = uilabel(app.Info);
             app.InfoCredits.HorizontalAlignment = 'center';
             app.InfoCredits.FontSize = 12;
-            app.InfoCredits.Position = [140 250 500 50];
-            app.InfoCredits.Text = 'Mathematical Modeling by Hoon Choi, Interface by Manar Alherech';
+            app.InfoCredits.Position = [140 250 500 20];
+            app.InfoCredits.Text = 'Mathematical modeling by Hoon Choi. Interface by Manar Alherech.';
 
+            app.cupPaper = uihyperlink(app.Info);
+            app.cupPaper.Text = 'check out our work.';
+            app.cupPaper.URL = 'https://www.sciencedirect.com/science/article/pii/S1383586621020347';
+            app.cupPaper.Position = [375 270 300 20];
+            
             app.AscDescLabel = uilabel(app.UIFigure);
             app.AscDescLabel.HorizontalAlignment = 'center';
             app.AscDescLabel.FontSize = 12;
-            app.AscDescLabel.Position = [667 190 50 50];
+            app.AscDescLabel.Position = [667 190 50 20];
             app.AscDescLabel.Text = 'Mobile Phase';
             app.AscDescLabel.WordWrap = 'on';
 
