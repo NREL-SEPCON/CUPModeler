@@ -305,7 +305,7 @@ classdef AppV1 < matlab.apps.AppBase
             for i = 1:height(app.compoundList.Data)
                 checkedName = app.compoundList.Data(i,1);
                 if string(cell2mat(checkedName)) == string(cell2mat(compoundName))
-                    compoundName = string(compoundName) + 'Rename)';
+                    compoundName = {convertStringsToChars(string(compoundName) + ' - Rename')};
                 end
             end
             app.compoundList.Data(end+1,:) = [compoundName,1,1,0,0];
@@ -392,23 +392,11 @@ classdef AppV1 < matlab.apps.AppBase
 
             [importedData] = xlsread(filename)';
 
-            % Create dataPreviewTable
-            if contains(identifier, 'Pulse')
-                app.dataPreviewTable = uitable(app.PulseTab);
-            elseif contains(identifier, 'Fit')
-                app.dataPreviewTable = uitable(app.FitTab);
-            end
-            app.dataPreviewTable.Data = dataPreview;
-            app.dataPreviewTable.Position = [20 25 680 400];
-            app.dataPreviewTable.ColumnWidth = '1x';
+            cover = uilabel(app.UIFigure, 'Position', [0 0 10000 10000]);
 
-            try
-                selectedFields = str2num(cell2mat(inputdlg({'Choose column of X axis data:', 'Choose column of Y axis data'},'Data Selection')));
-            catch
-                delete(app.dataPreviewTable);
-            end
+            selectedFields = ColumnSelectPopup(importedData);
 
-            delete(app.dataPreviewTable);
+            delete(cover);
 
             if all(selectedFields > 0) && all(floor(selectedFields) == selectedFields)
                 X = importedData(selectedFields(1),:);
@@ -506,7 +494,12 @@ classdef AppV1 < matlab.apps.AppBase
             extrusionPeakTimes = retentionTimes(extrusionPeakTimesLogical);
             
             elutionAndSweepPartitionCoefficients = ((F*elutionAndSweepPeakTimes)-Vm-(deadVolume/2))/Vs;
-            extrusionPartitionCoefficients = (Vcm+deadVolume)/(Vc+Vcm+deadVolume-(extrusionPeakTimes*F));
+
+            if length(extrusionPeakTimes) > 0
+                extrusionPartitionCoefficients = (Vcm+deadVolume)/(Vc+Vcm+deadVolume-(extrusionPeakTimes*F));
+            else
+                extrusionPartitionCoefficients = [];
+            end
             
             partitionCoefficients = [elutionAndSweepPartitionCoefficients extrusionPartitionCoefficients];
             
@@ -957,7 +950,10 @@ classdef AppV1 < matlab.apps.AppBase
 
                 filename = string(inputdlg('Title for exported files?', 'Export', [1 50], filename));
 
+                %columnParameters
+
                 writetable(compiledData, [filename + '.xlsx']);
+                %writetable(columnParameters, [filename + '.xlsx'], 'Sheet',2);
 
                 exportedPlot = sprintf('app.UIAxes' + ExportIdentifier)
                 exportgraphics(eval(exportedPlot), [filename + '.pdf'], 'ContentType', 'vector');
@@ -1716,7 +1712,7 @@ classdef AppV1 < matlab.apps.AppBase
             app.AscDescLabel = uilabel(app.UIFigure);
             app.AscDescLabel.HorizontalAlignment = 'center';
             app.AscDescLabel.FontSize = 12;
-            app.AscDescLabel.Position = [667 190 50 20];
+            app.AscDescLabel.Position = [665 190 50 30];
             app.AscDescLabel.Text = 'Mobile Phase';
             app.AscDescLabel.WordWrap = 'on';
 
