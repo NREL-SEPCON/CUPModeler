@@ -456,7 +456,6 @@ classdef AppV1 < matlab.apps.AppBase
         function updateCompoundListWithFits(app)
             cla(app.UIAxesFit);
             app.findAndLabelFitPeaks();
-            app.VolumeTimeSwitch.Value = 'Time';
             
             [F Sf KD Vc Ncup C0 Vinj Vcm Vcup Vmcup dtElution elutionTime deadVolume] = computeValues(app);
             
@@ -482,13 +481,8 @@ classdef AppV1 < matlab.apps.AppBase
             solventFrontTime = Vm/F;
             xline(app.UIAxesFit, solventFrontTime, '-.r', 'Solvent Front')
 
-            rejectedPeaks = retentionTimes < solventFrontTime;
-
-            acceptedPeaks = retentionTimes(~rejectedPeaks);
-            %TODO: Add filter for rejecting peaks before solvent front
-
-            elutionAndSweepPeakTimesLogical = acceptedPeaks < sweepTime;
-            extrusionPeakTimesLogical = acceptedPeaks > sweepTime;
+            elutionAndSweepPeakTimesLogical = retentionTimes < sweepTime;
+            extrusionPeakTimesLogical = retentionTimes > sweepTime;
             
             elutionAndSweepPeakTimes = retentionTimes(elutionAndSweepPeakTimesLogical);
             extrusionPeakTimes = retentionTimes(extrusionPeakTimesLogical);
@@ -496,12 +490,13 @@ classdef AppV1 < matlab.apps.AppBase
             elutionAndSweepPartitionCoefficients = ((F*elutionAndSweepPeakTimes)-Vm-(deadVolume/2))/Vs;
 
             if length(extrusionPeakTimes) > 0
-                extrusionPartitionCoefficients = (Vcm+deadVolume)/(Vc+Vcm+deadVolume-(extrusionPeakTimes*F));
+                extrusionPartitionCoefficients = (Vcm)./(Vc+Vcm+deadVolume+(Vinj/2)-(extrusionPeakTimes*F));
             else
                 extrusionPartitionCoefficients = [];
             end
             
             partitionCoefficients = [elutionAndSweepPartitionCoefficients extrusionPartitionCoefficients];
+            partitionCoefficients = partitionCoefficients(partitionCoefficients > 0)
             
             for i = 1:height(app.compoundList.Data)
                 app.removeCompoundButtonPushed()
