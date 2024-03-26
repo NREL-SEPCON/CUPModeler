@@ -490,13 +490,16 @@ classdef AppV1 < matlab.apps.AppBase
             elutionAndSweepPartitionCoefficients = ((F*elutionAndSweepPeakTimes)-Vm-(deadVolume/2))/Vs;
 
             if length(extrusionPeakTimes) > 0
+                %extrusionPartitionCoefficients = (Vcm+deadVolume)./(Vc+Vcm+deadVolume-(extrusionPeakTimes*F));
                 extrusionPartitionCoefficients = (Vcm)./(Vc+Vcm+deadVolume+(Vinj/2)-(extrusionPeakTimes*F));
             else
                 extrusionPartitionCoefficients = [];
             end
             
             partitionCoefficients = [elutionAndSweepPartitionCoefficients extrusionPartitionCoefficients];
-            partitionCoefficients = partitionCoefficients(partitionCoefficients > 0)
+            pks = pks(partitionCoefficients > 0);
+            retentionTimes = retentionTimes(partitionCoefficients > 0);
+            partitionCoefficients = partitionCoefficients(partitionCoefficients > 0);
             
             for i = 1:height(app.compoundList.Data)
                 app.removeCompoundButtonPushed()
