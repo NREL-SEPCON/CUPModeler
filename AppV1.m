@@ -3,6 +3,10 @@ classdef AppV1 < matlab.apps.AppBase
     % Properties that correspond to app components
     properties (Access = public)
         UIFigure                      matlab.ui.Figure
+        FileMenu                      matlab.ui.container.Menu
+        SaveMenu                      matlab.ui.container.Menu
+        OpenMenu                      matlab.ui.container.Menu
+        AboutMenu                     matlab.ui.container.Menu
         TabGroup                      matlab.ui.container.TabGroup
         ColumnPropertiesLabel         matlab.ui.control.Label
         CompoundListLabel             matlab.ui.control.Label
@@ -136,6 +140,129 @@ classdef AppV1 < matlab.apps.AppBase
     % Callbacks that handle component events
     methods (Access = private)
 
+        function saveState(app)
+            filename = ['Session ' + string(datetime) + '.mat'];
+            [filename, directory] = uiputfile('.mat', 'Save session', filename);
+            inputsToSave = struct('F', app.FlowRate.Value, ...
+                                  'colVol', app.ColumnVolume.Value, ...
+                                  'timeVolToggle', app.VolumeTimeSwitch.Value, ...
+                                  'AscDesc', app.AscDesc.Value, ...
+                                  'SfCoeff', app.StationaryPhaseSwitch.Value,...
+                                  'NCoeff', app.ColumnEfficiencySwitch.Value, ...
+                                  'compoundList', {app.compoundList.Data}, ...
+                                  'injVolChkBx', app.includeInjectionVolCheckbox.Value, ...
+                                  'elutionDuration', app.ElutionDuration.Value, ...
+                                  'Vd', app.ColumnDeadVolume.Value, ...
+                                  'Vinj', app.InjectionVolume.Value, ...
+                                  'classicPlot', {getappdata(app.UIAxesClassic, 'rawData')}, ...
+                                  'extrusionDuration', app.ExtrusionDuration.Value, ...
+                                  'extrusionPlot', {getappdata(app.UIAxesExtrusion, 'rawData')}, ...
+                                  'dualDuration', app.DualDuration.Value, ...
+                                  'dualPlot', {getappdata(app.UIAxesDual, 'rawData')}, ...
+                                  'switchTimeList', {app.SwitchTimeList.Data}, ...
+                                  'multiPlot', {getappdata(app.UIAxesMulti, 'rawData')}, ...
+                                  'multiPositionPlot', {getappdata(app.UIAxesMultiPosition, 'rawData')}, ...
+                                  'PulseNList', {app.PulseNList.Data},...
+                                  'pulseSpan', app.PulseSpan.Value, ...
+                                  'PulseProminence', app.PulseProminence.Value, ...
+                                  'PulseBaseline', app.PulseBaseline.Value, ...
+                                  'pulsePlot', app.UIAxesPulse, ...
+                                  'FitSpan', app.FitSpan.Value, ...
+                                  'FitProminence', app.FitProminence.Value, ...
+                                  'FitThreshold', app.FitThreshold.Value, ...
+                                  'FitPlot', app.UIAxesFit);
+
+            if string(app.StationaryPhaseSwitch.Value) == 'Set Sf'
+                inputsToSave.Sf = app.StationaryPhaseRetention.Value;
+
+            elseif string(app.StationaryPhaseSwitch.Value) == 'Coeff.'
+                inputsToSave.SfA = app.SfCoefficientA.Value;
+                inputsToSave.SfB = app.SfCoefficientB.Value;
+            end
+
+            if string(app.ColumnEfficiencySwitch.Value) == 'Set N'
+                inputsToSave.N = app.ColumnEfficiencyN.Value;
+
+            elseif string(app.ColumnEfficiencySwitch.Value) == 'Coeff.'
+                inputsToSave.NA = app.NCoefficientA.Value;
+                inputsToSave.NB = app.NCoefficientB.Value;
+                inputsToSave.NC = app.NCoefficientC.Value;
+            end
+
+            save(strcat(directory, filename), 'inputsToSave');
+        end
+
+        function loadState(app)
+            [filename, directory] = uigetfile('.mat');
+            load(strcat(directory, filename));
+
+            if string(inputsToSave.SfCoeff) == 'Set Sf'
+                if string(app.StationaryPhaseSwitch.Value) == 'Coeff.'
+                    app.StationaryPhaseSwitch.Value = 'Set Sf'
+                    app.toggleStationary();
+                end
+                
+                app.StationaryPhaseRetention.Value = inputsToSave.Sf
+                
+            elseif string(inputsToSave.SfCoeff) == 'Coeff.'
+                if string(app.StationaryPhaseSwitch.Value) == 'Set Sf'
+                    app.StationaryPhaseSwitch.Value = 'Coeff.'
+                    app.toggleStationary();
+                end
+                
+                app.SfCoefficientA.Value = inputsToSave.SfA;
+                app.SfCoefficientB.Value = inputsToSave.SfB;
+            end
+            
+            if string(inputsToSave.NCoeff) == 'Set N'
+                if string(app.ColumnEfficiencySwitch.Value) == 'Coeff.'
+                    app.ColumnEfficiencySwitch.Value = 'Set N'
+                    app.toggleEfficiency();
+                end
+                
+                app.ColumnEfficiencyN.Value = inputsToSave.N
+                
+            elseif string(inputsToSave.NCoeff) == 'Coeff.'
+                if string(app.ColumnEfficiencySwitch.Value) == 'Set N'
+                    app.ColumnEfficiencySwitch.Value = 'Coeff'
+                    app.toggleEfficiency();
+                end
+
+                app.NCoefficientA.Value = inputsToSave.NA;
+                app.NCoefficientB.Value = inputsToSave.NB;
+                app.NCoefficientC.Value = inputsToSave.NC;
+            end
+
+            app.FlowRate.Value = inputsToSave.F;
+            app.ColumnVolume.Value = inputsToSave.colVol;
+            app.VolumeTimeSwitch.Value = inputsToSave.timeVolToggle;
+            app.AscDesc.Value = inputsToSave.AscDesc;
+            app.includeInjectionVolCheckbox.Value = inputsToSave.injVolChkBx;
+            app.compoundList.Data = inputsToSave.compoundList;
+            app.ElutionDuration.Value = inputsToSave.elutionDuration;
+            app.ColumnDeadVolume.Value = inputsToSave.Vd;
+            app.InjectionVolume.Value = inputsToSave.Vinj;
+            app.ExtrusionDuration.Value = inputsToSave.extrusionDuration;
+            app.DualDuration.Value = inputsToSave.dualDuration;
+            app.SwitchTimeList.Data = inputsToSave.switchTimeList;
+            app.PulseNList.Data = inputsToSave.PulseNList;
+            app.PulseSpan.Value = inputsToSave.pulseSpan;
+            app.PulseProminence.Value = inputsToSave.PulseProminence;
+            app.PulseBaseline.Value = inputsToSave.PulseBaseline;
+            app.UIAxesPulse = inputsToSave.pulsePlot;
+            app.FitSpan.Value = inputsToSave.FitSpan;
+            app.FitProminence.Value = inputsToSave.FitProminence;
+            app.FitThreshold.Value = inputsToSave.FitThreshold;
+            app.UIAxesFit = inputsToSave.FitPlot;
+            
+            plot(app.UIAxesClassic, inputsToSave.classicPlot{1}, inputsToSave.classicPlot{2}, 'linewidth', 2.0);
+            plot(app.UIAxesExtrusion, inputsToSave.extrusionPlot{1}, inputsToSave.extrusionPlot{2}, 'linewidth', 2.0);
+            plot(app.UIAxesDual, inputsToSave.dualPlot{1}, inputsToSave.dualPlot{2}, 'linewidth', 2.0);
+            plot(app.UIAxesMulti, inputsToSave.multiPlot{1}, inputsToSave.multiPlot{2}, 'linewidth', 2.0);
+            contourf(app.UIAxesMultiPosition, inputsToSave.multiPositionPlot{1}, inputsToSave.multiPositionPlot{2}, inputsToSave.multiPositionPlot{3}, inputsToSave.multiPositionPlot{4}, 'linecolor', 'none');
+
+        end
+
         function toggleVolumeTime(app)
             F = app.FlowRate.Value;
 
@@ -244,6 +371,10 @@ classdef AppV1 < matlab.apps.AppBase
                 app.SfCoefficientB.Position = [120 345 51 22];
                 app.SfCoefficientB.Value = -0.1426;
             end
+        end
+
+        function toggleStationaryAndPlot(app)
+            app.toggleStationary();
             app.CUPPrediction();
         end
 
@@ -295,6 +426,10 @@ classdef AppV1 < matlab.apps.AppBase
                 app.NCoefficientC.Position = [385 345 51 22];
                 app.NCoefficientC.Value = 0.14807;
             end
+        end
+        
+        function toggleEfficiencyAndPlot(app)
+            app.toggleEfficiency();
             app.CUPPrediction();
         end
 
@@ -606,7 +741,7 @@ classdef AppV1 < matlab.apps.AppBase
         function useNValues(app)
             if string(app.ColumnEfficiencySwitch.Value) == 'Set N'
                 app.ColumnEfficiencySwitch.Value = 'Coeff.';
-                app.toggleEfficiency();
+                app.toggleEfficiencyAndPlot();
             end
 
             A = str2double(extractAfter(app.labelNA.Text, ' '));
@@ -622,7 +757,7 @@ classdef AppV1 < matlab.apps.AppBase
         function useSfValues(app)
             if string(app.StationaryPhaseSwitch.Value) == 'Set Sf'
                 app.StationaryPhaseSwitch.Value = 'Coeff.';
-                app.toggleStationary();
+                app.toggleStationaryAndPlot();
             end
 
             A = str2double(extractAfter(app.labelSfA.Text, ' '));
@@ -708,8 +843,11 @@ classdef AppV1 < matlab.apps.AppBase
             end
             
             if contains(identifier, 'Classic')
-                telute = telute + deadVolume;
-                
+                if string(app.VolumeTimeSwitch.Value) == 'Volume'
+                    F = 1;
+                end
+                telute = telute + deadVolume/F;
+                setappdata(app.UIAxesClassic, 'rawData', {telute, Cout})
                 plot(app.UIAxesClassic, telute, Cout, 'linewidth', 2.0);
                 
                 [compoundNames, peakPositions, peakHeights, maxHeight] = app.addLabelsToPeaks(telute, Cout);
@@ -739,6 +877,8 @@ classdef AppV1 < matlab.apps.AppBase
                     if string(app.VolumeTimeSwitch.Value) == 'Volume'
                         X = X*F;
                     end
+
+                    setappdata(app.UIAxesClassic, 'rawData', {X, Y});
                     
                     hold(app.UIAxesClassic, 'on');
                     plot(app.UIAxesClassic, X, Y, 'black', 'linewidth', 2.0);
@@ -779,6 +919,8 @@ classdef AppV1 < matlab.apps.AppBase
                     sweepStartLabel = sprintf(['Sweep Start\n']) + string(elutionTime) + LinesLabelsUnits;
                     sweepEndLabel = sprintf(['Extrusion Start\n']) + string(round(sweepTime, 2)) + LinesLabelsUnits;
                 end
+
+                setappdata(app.UIAxesExtrusion, 'rawData', {telute, Cout});
                 
                 plot(app.UIAxesExtrusion, telute, Cout, 'linewidth', 2.0);
 
@@ -857,6 +999,8 @@ classdef AppV1 < matlab.apps.AppBase
                 
                 telute = Vspan/F;
                 stationaryPhaseVolume = dualTime/F;
+
+                setappdata(app.UIAxesDual, 'rawData', {telute, Cout});
                 
                 plot(app.UIAxesDual, telute, Cout, 'linewidth', 2.0);
                 
@@ -906,6 +1050,8 @@ classdef AppV1 < matlab.apps.AppBase
                     VswCMText = string(round(VswCM, 2)) + LinesLabelsUnits;
                     VswDMText = string(round(VswDM, 2)) + LinesLabelsUnits;
                 end
+
+                setappdata(app.UIAxesMulti, 'rawData', {telute, Cout});
                 
                 plot(app.UIAxesMulti, telute, Cout, 'linewidth', 2.0);
 
@@ -920,6 +1066,8 @@ classdef AppV1 < matlab.apps.AppBase
                 matrixScaler = max(max(xMatrix));
                 
                 contourSpacing = linspace(0.001*matrixScaler, .05*matrixScaler, 30);
+
+                setappdata(app.UIAxesMultiPosition, 'rawData', {telute, yAxis, xMatrix, contourSpacing});
                 
                 contourf(app.UIAxesMultiPosition, telute, yAxis, xMatrix, contourSpacing, 'linecolor', 'none');
                 
@@ -940,21 +1088,63 @@ classdef AppV1 < matlab.apps.AppBase
             
             
             if contains(identifier, 'Export')
-                ExportIdentifier = erase(identifier, 'Export');
-                
-                filename = [ExportIdentifier + ' ' + app.VolumeTimeSwitch.Value + ' export ' + string(datetime)];
                 individualCurves = array2table(Cout.', 'VariableNames', app.compoundList.Data(:,1));
                 compiledData = [array2table(telute.'), individualCurves];
 
-                filename = string(inputdlg('Title for exported files?', 'Export', [1 50], filename));
+                inputsToSave = struct('FlowRate', app.FlowRate.Value, ...
+                                  'ColumnVolume', app.ColumnVolume.Value, ...
+                                  'Monitoring', app.VolumeTimeSwitch.Value, ...
+                                  'MobilePhase', app.AscDesc.Value, ...
+                                  'SfCoeff', app.StationaryPhaseSwitch.Value,...
+                                  'NCoeff', app.ColumnEfficiencySwitch.Value, ...
+                                  'ElutionDuration', app.ElutionDuration.Value, ...
+                                  'Vd', app.ColumnDeadVolume.Value, ...
+                                  'Vinj', app.InjectionVolume.Value, ...
+                                  'VinjAddVd', app.includeInjectionVolCheckbox.Value, ...
+                                  'ExtrusionDuration', app.ExtrusionDuration.Value, ...
+                                  'DualDuration', app.DualDuration.Value);
 
-                %columnParameters
+                if string(app.StationaryPhaseSwitch.Value) == 'Set Sf'
+                    inputsToSave.Sf = app.StationaryPhaseRetention.Value;
 
-                writetable(compiledData, [filename + '.xlsx']);
-                %writetable(columnParameters, [filename + '.xlsx'], 'Sheet',2);
+                elseif string(app.StationaryPhaseSwitch.Value) == 'Coeff.'
+                    inputsToSave.SfA = app.SfCoefficientA.Value;
+                    inputsToSave.SfB = app.SfCoefficientB.Value;
+                end
 
-                exportedPlot = sprintf('app.UIAxes' + ExportIdentifier)
-                exportgraphics(eval(exportedPlot), [filename + '.pdf'], 'ContentType', 'vector');
+                if string(app.ColumnEfficiencySwitch.Value) == 'Set N'
+                    inputsToSave.N = app.ColumnEfficiencyN.Value;
+
+                elseif string(app.ColumnEfficiencySwitch.Value) == 'Coeff.'
+                    inputsToSave.NA = app.NCoefficientA.Value;
+                    inputsToSave.NB = app.NCoefficientB.Value;
+                    inputsToSave.NC = app.NCoefficientC.Value;
+                end
+
+                columnProperties = struct2table(inputsToSave);
+
+                columnProperties = [columnProperties.Properties.VariableNames', struct2cell(inputsToSave)];
+                compoundTable = [app.compoundList.ColumnName, app.compoundList.Data']';
+                switchingTimes = [app.SwitchTimeList.ColumnName, app.SwitchTimeList.Data']';
+
+                ExportIdentifier = erase(identifier, 'Export');
+                filename = [ExportIdentifier + ' ' + app.VolumeTimeSwitch.Value + ' export ' + string(datetime)];
+
+                [filename, directory] = uiputfile('.xlsx', 'Title for exported files?', filename);
+
+                filename = strcat(directory, filename);
+
+                writetable(compiledData, filename);
+                writetable(cell2table(columnProperties), filename, 'Sheet', 2, 'WriteVariableNames', false);
+                writetable(cell2table(compoundTable(:,1:4)), filename, 'Sheet', 2, 'Range', 'D1', 'WriteVariableNames', false);
+                writetable(cell2table(switchingTimes), filename, 'Sheet', 2,'Range', 'I1', 'WriteVariableNames', false);
+
+                [filepath,name,ext] = fileparts(filename);
+
+                filename = strcat(filepath,'/',name,'.pdf');
+
+                exportedPlot = sprintf('app.UIAxes' + ExportIdentifier);
+                exportgraphics(eval(exportedPlot), filename, 'ContentType', 'vector');
             end
 
             app.addRetentionElutionToTable(peakPositions);
@@ -971,6 +1161,26 @@ classdef AppV1 < matlab.apps.AppBase
             app.UIFigure = uifigure('Visible', 'off');
             app.UIFigure.Position = [40 250 1440 500];
             app.UIFigure.Name = 'CUP Modeler';
+
+            % Create FileMenu
+            app.FileMenu = uimenu(app.UIFigure);
+            app.FileMenu.Text = 'File';
+
+            % Create SaveMenu
+            app.SaveMenu = uimenu(app.FileMenu);
+            app.SaveMenu.Text = 'Save';
+            app.SaveMenu.Accelerator = 'S';
+            app.SaveMenu.MenuSelectedFcn = @(src,event) saveState(app);
+            
+            % Create OpenMenu
+            app.OpenMenu = uimenu(app.FileMenu);
+            app.OpenMenu.Text = 'Open';
+            app.OpenMenu.Accelerator = 'O';
+            app.OpenMenu.MenuSelectedFcn = @(src,event) loadState(app);
+
+            % Create AboutMenu
+            app.AboutMenu = uimenu(app.FileMenu);
+            app.AboutMenu.Text = 'About';
             
             % Create TabGroup
             app.TabGroup = uitabgroup(app.UIFigure);
@@ -1073,7 +1283,7 @@ classdef AppV1 < matlab.apps.AppBase
             app.StationaryPhaseRetention.Value = 0.75;
 
             % Create StationaryPhaseSwitch
-            app.StationaryPhaseSwitch = uiswitch(app.UIFigure, 'slider', 'ValueChangedFcn',@(src,event) toggleStationary(app));
+            app.StationaryPhaseSwitch = uiswitch(app.UIFigure, 'slider', 'ValueChangedFcn',@(src,event) toggleStationaryAndPlot(app));
             app.StationaryPhaseSwitch.Items = {'Set Sf', 'Coeff.'};
             app.StationaryPhaseSwitch.Position = [75 320 45 20];
             app.StationaryPhaseSwitch.Value = 'Set Sf';
@@ -1088,7 +1298,7 @@ classdef AppV1 < matlab.apps.AppBase
             app.ColumnEfficiencyNLabel.Text = 'Column Efficiency (N)';
             
             % Create ColumnEfficiencySwitch
-            app.ColumnEfficiencySwitch = uiswitch(app.UIFigure, 'slider', 'ValueChangedFcn',@(src,event) toggleEfficiency(app));
+            app.ColumnEfficiencySwitch = uiswitch(app.UIFigure, 'slider', 'ValueChangedFcn',@(src,event) toggleEfficiencyAndPlot(app));
             app.ColumnEfficiencySwitch.Items = {'Set N', 'Coeff.'};
             app.ColumnEfficiencySwitch.Position = [308 320 45 20];
             app.ColumnEfficiencySwitch.Value = 'Set N';
