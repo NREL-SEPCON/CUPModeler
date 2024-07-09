@@ -77,6 +77,7 @@ classdef AppV1 < matlab.apps.AppBase
         DualDuration                  matlab.ui.control.NumericEditField
         DualDurationLabel             matlab.ui.control.Label
         DualDurationLabelUnits        matlab.ui.control.Label
+        dualModelSumCheckbox     matlab.ui.control.CheckBox
         PlotButtonDual                matlab.ui.control.Button
         ExportButtonDual              matlab.ui.control.Button
         DualPeaksCheckbox             matlab.ui.control.CheckBox
@@ -85,6 +86,7 @@ classdef AppV1 < matlab.apps.AppBase
         UIAxesDual                    matlab.ui.control.UIAxes
         
         MultipleDualModeTab           matlab.ui.container.Tab
+        multiModelSumCheckbox     matlab.ui.control.CheckBox
         PlotButtonMulti               matlab.ui.control.Button
         ExportButtonMulti             matlab.ui.control.Button
         MultiPeaksCheckbox            matlab.ui.control.CheckBox
@@ -1031,6 +1033,17 @@ classdef AppV1 < matlab.apps.AppBase
                 end
 
                 [compoundNames, peakPositions, peakHeights, maxHeight] = app.addLabelsToPeaks(telute, Cout);
+
+                if app.dualModelSumCheckbox.Value == 1
+                    summedTrace = sum(Cout);
+                    hold(app.UIAxesDual, 'on');
+                    plot(app.UIAxesDual, telute, summedTrace, '-.r', 'linewidth', 1.0);
+                    hold(app.UIAxesDual, 'off');
+
+                    if maxHeight < max(summedTrace)
+                        maxHeight = max(summedTrace);
+                    end
+                end
                
                 if app.DualPeaksCheckbox.Value
                     text(app.UIAxesDual, peakPositions, peakHeights, compoundNames, 'HorizontalAlignment', 'center');
@@ -1077,6 +1090,17 @@ classdef AppV1 < matlab.apps.AppBase
                 plot(app.UIAxesMulti, telute, Cout, 'linewidth', 2.0);
 
                 [compoundNames, peakPositions, peakHeights, maxHeight] = app.addLabelsToPeaks(telute, Cout);
+
+                if app.multiModelSumCheckbox.Value == 1
+                    summedTrace = sum(Cout);
+                    hold(app.UIAxesMulti, 'on');
+                    plot(app.UIAxesMulti, telute, summedTrace, '-.r', 'linewidth', 1.0);
+                    hold(app.UIAxesMulti, 'off');
+
+                    if maxHeight < max(summedTrace)
+                        maxHeight = max(summedTrace);
+                    end
+                end
                 
                 app.UIAxesMulti.XLim = [0 telute(end)];
                 app.UIAxesMulti.YLim = [0 maxHeight*1.1];
@@ -1538,6 +1562,12 @@ classdef AppV1 < matlab.apps.AppBase
             zlabel(app.UIAxesDual, 'Z')
             app.UIAxesDual.Position = [8 10 695 430];
 
+            %Create dualModelSumCheckbox
+            app.dualModelSumCheckbox = uicheckbox(app.dualModeTab,...
+                'Text', 'Sum?',...
+                'Value', 0,...
+                'Position', [240 450 60 15]);
+
             % Create PlotButton_3
             app.PlotButtonDual = uibutton(app.dualModeTab, 'ButtonPushedFcn',@(src,event) CUPPrediction(app));
             app.PlotButtonDual.Position = [297 445 68 23];
@@ -1602,6 +1632,12 @@ classdef AppV1 < matlab.apps.AppBase
             ylabel(app.UIAxesMultiPosition, 'Column Position')
             zlabel(app.UIAxesMultiPosition, 'Z')
             app.UIAxesMultiPosition.Position = [200 10 495 215];
+
+            %Create multiModelSumCheckbox
+            app.multiModelSumCheckbox = uicheckbox(app.MultipleDualModeTab,...
+                'Text', 'Sum?',...
+                'Value', 0,...
+                'Position', [240 450 60 15]);
 
             % Create PlotButton_4
             app.PlotButtonMulti = uibutton(app.MultipleDualModeTab, 'ButtonPushedFcn',@(src,event) CUPPrediction(app));
