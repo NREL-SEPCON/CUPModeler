@@ -7,103 +7,114 @@ classdef AppV1 < matlab.apps.AppBase
         SaveMenu                      matlab.ui.container.Menu
         OpenMenu                      matlab.ui.container.Menu
         AboutMenu                     matlab.ui.container.Menu
-        TabGroup                      matlab.ui.container.TabGroup
+
         ColumnPropertiesLabel         matlab.ui.control.Label
-        CompoundListLabel             matlab.ui.control.Label
-        VolumeTimeSwitch              matlab.ui.control.Switch
-        AscDescLabel                  matlab.ui.control.Label
-        AscDesc                       matlab.ui.control.Switch
-        StationaryPhaseSwitch         matlab.ui.control.Switch
-        ColumnEfficiencySwitch        matlab.ui.control.Switch
-        removeCompound                matlab.ui.control.Button
-        addCompound                   matlab.ui.control.Button
-        saveCompoundList              matlab.ui.control.Button
-        openCompoundList              matlab.ui.control.Button
-        saveSwitchTimes               matlab.ui.control.Button
-        openSwitchTimes               matlab.ui.control.Button
-        compoundList                  matlab.ui.control.Table
-        includeInjectionVolCheckbox   matlab.ui.control.CheckBox
-        ClassicPeaksCheckbox          matlab.ui.control.CheckBox
-        classicModelSumCheckbox       matlab.ui.control.CheckBox
-        ExtrusionPeaksCheckbox        matlab.ui.control.CheckBox
-        extrusionModelSumCheckbox     matlab.ui.control.CheckBox
-        DualPeaksCheckbox             matlab.ui.control.CheckBox
-        MultiPeaksCheckbox            matlab.ui.control.CheckBox
-        ExtrusionLinesCheckbox        matlab.ui.control.CheckBox
-        ExtrusionLinesLabelsCheckbox  matlab.ui.control.CheckBox
-        DualLinesCheckbox             matlab.ui.control.CheckBox
-        DualLinesLabelsCheckbox       matlab.ui.control.CheckBox
-        MultiLinesCheckbox            matlab.ui.control.CheckBox
-        MultiLinesLabelsCheckbox      matlab.ui.control.CheckBox
-        ElutionDuration               matlab.ui.control.NumericEditField
+        FlowRateLabel                 matlab.ui.control.Label
+        FlowRate                      matlab.ui.control.NumericEditField
+        FlowRateLabelUnits            matlab.ui.control.Label
+        ColumnVolumeLabel             matlab.ui.control.Label
+        ColumnVolume                  matlab.ui.control.NumericEditField
+        ColumnVolumeLabelUnits        matlab.ui.control.Label
         ElutionDurationLabel          matlab.ui.control.Label
-        ColumnDeadVolume              matlab.ui.control.NumericEditField
-        ColumnDeadVolumeLabel         matlab.ui.control.Label
-        ColumnDeadVolumeLabelUnits    matlab.ui.control.Label
-        ColumnEfficiencyN             matlab.ui.control.NumericEditField
-        ColumnEfficiencyNLabel        matlab.ui.control.Label
-        InjectionVolume               matlab.ui.control.NumericEditField
+        ElutionDuration               matlab.ui.control.NumericEditField
+        ElutionDurationLabelUnits     matlab.ui.control.Label
         InjectionVolumeLabel          matlab.ui.control.Label
+        InjectionVolume               matlab.ui.control.NumericEditField
         InjectionVolumeLabelUnits     matlab.ui.control.Label
-        StationaryPhaseRetention      matlab.ui.control.NumericEditField
         StationaryPhaseRetentionLabel matlab.ui.control.Label
+        StationaryPhaseRetention      matlab.ui.control.NumericEditField
+        StationaryPhaseSwitch         matlab.ui.control.Switch
         SfCoefficientA                matlab.ui.control.NumericEditField
         SfCoefficientALabel           matlab.ui.control.Label
         SfCoefficientB                matlab.ui.control.NumericEditField
         SfCoefficientBLabel           matlab.ui.control.Label
+        ColumnEfficiencyNLabel        matlab.ui.control.Label
+        ColumnEfficiencyN             matlab.ui.control.NumericEditField
+        ColumnEfficiencySwitch        matlab.ui.control.Switch
         NCoefficientA                 matlab.ui.control.NumericEditField
         NCoefficientALabel            matlab.ui.control.Label
         NCoefficientB                 matlab.ui.control.NumericEditField
         NCoefficientBLabel            matlab.ui.control.Label
         NCoefficientC                 matlab.ui.control.NumericEditField
         NCoefficientCLabel            matlab.ui.control.Label
-        ColumnVolume                  matlab.ui.control.NumericEditField
-        ColumnVolumeLabel             matlab.ui.control.Label
-        ColumnVolumeLabelUnits        matlab.ui.control.Label
-        FlowRate                      matlab.ui.control.NumericEditField
-        FlowRateLabel                 matlab.ui.control.Label
-        FlowRateLabelUnits            matlab.ui.control.Label
-        ElutionDurationLabelUnits     matlab.ui.control.Label
+        VolumeTimeSwitch              matlab.ui.control.Switch
+        ColumnDeadVolumeLabel         matlab.ui.control.Label
+        ColumnDeadVolume              matlab.ui.control.NumericEditField
+        ColumnDeadVolumeLabelUnits    matlab.ui.control.Label
+        includeInjectionVolCheckbox   matlab.ui.control.CheckBox
+
+        CompoundListLabel             matlab.ui.control.Label
+        addCompound                   matlab.ui.control.Button
+        removeCompound                matlab.ui.control.Button
+        saveCompoundList              matlab.ui.control.Button
+        openCompoundList              matlab.ui.control.Button
+        compoundList                  matlab.ui.control.Table
+        AscDescLabel                  matlab.ui.control.Label
+        AscDesc                       matlab.ui.control.Switch
+        
+        TabGroup                      matlab.ui.container.TabGroup
         ClassicElutionTab             matlab.ui.container.Tab
-        ExportButtonClassic           matlab.ui.control.Button
+        classicModelSumCheckbox       matlab.ui.control.CheckBox
         PlotButtonClassic             matlab.ui.control.Button
+        ExportButtonClassic           matlab.ui.control.Button
+        ClassicPeaksCheckbox          matlab.ui.control.CheckBox
         UIAxesClassic                 matlab.ui.control.UIAxes
+        
         ElutionExtrusionTab           matlab.ui.container.Tab
-        ExtrusionDurationLabelUnits   matlab.ui.control.Label
+        CCCCPCSwitch                  matlab.ui.control.Switch
         ExtrusionDuration             matlab.ui.control.NumericEditField
         ExtrusionDurationLabel        matlab.ui.control.Label
-        ExportButtonExtrusion         matlab.ui.control.Button
+        ExtrusionDurationLabelUnits   matlab.ui.control.Label
+        extrusionModelSumCheckbox     matlab.ui.control.CheckBox
         PlotButtonExtrusion           matlab.ui.control.Button
+        ExportButtonExtrusion         matlab.ui.control.Button
+        ExtrusionPeaksCheckbox        matlab.ui.control.CheckBox
+        ExtrusionLinesCheckbox        matlab.ui.control.CheckBox
+        ExtrusionLinesLabelsCheckbox  matlab.ui.control.CheckBox
         UIAxesExtrusion               matlab.ui.control.UIAxes
+        
         dualModeTab                   matlab.ui.container.Tab
-        DualDurationLabelUnits        matlab.ui.control.Label
         DualDuration                  matlab.ui.control.NumericEditField
         DualDurationLabel             matlab.ui.control.Label
-        ExportButtonDual              matlab.ui.control.Button
+        DualDurationLabelUnits        matlab.ui.control.Label
         PlotButtonDual                matlab.ui.control.Button
+        ExportButtonDual              matlab.ui.control.Button
+        DualPeaksCheckbox             matlab.ui.control.CheckBox
+        DualLinesCheckbox             matlab.ui.control.CheckBox
+        DualLinesLabelsCheckbox       matlab.ui.control.CheckBox
         UIAxesDual                    matlab.ui.control.UIAxes
+        
         MultipleDualModeTab           matlab.ui.container.Tab
-        ExportButtonMulti             matlab.ui.control.Button
         PlotButtonMulti               matlab.ui.control.Button
-        SwitchTimeListLabel           matlab.ui.control.Label
-        SwitchTimeList                matlab.ui.control.Table
-        removeCycle                   matlab.ui.control.Button
-        addCycle                      matlab.ui.control.Button
-        UIAxesMultiPosition           matlab.ui.control.UIAxes
+        ExportButtonMulti             matlab.ui.control.Button
+        MultiPeaksCheckbox            matlab.ui.control.CheckBox
+        MultiLinesCheckbox            matlab.ui.control.CheckBox
+        MultiLinesLabelsCheckbox      matlab.ui.control.CheckBox
         UIAxesMulti                   matlab.ui.control.UIAxes
+        SwitchTimeListLabel           matlab.ui.control.Label
+        addCycle                      matlab.ui.control.Button
+        removeCycle                   matlab.ui.control.Button
+        saveSwitchTimes               matlab.ui.control.Button
+        openSwitchTimes               matlab.ui.control.Button
+        SwitchTimeList                matlab.ui.control.Table
+        UIAxesMultiPosition           matlab.ui.control.UIAxes
+        
         PulseTab                      matlab.ui.container.Tab
-        UIAxesPulse                   matlab.ui.control.UIAxes
         ImportPulseTraceButton        matlab.ui.control.Button
+        PulseSpanLabel                matlab.ui.control.Label
+        PulseSpan                     matlab.ui.control.NumericEditField
+        PulseProminenceLabel          matlab.ui.control.Label
+        PulseProminence               matlab.ui.control.NumericEditField
+        PulseBaselineLabel            matlab.ui.control.Label
+        PulseBaseline                 matlab.ui.control.NumericEditField
+        FindPulsePeaksButton          matlab.ui.control.Button
         AddPulseNValue                matlab.ui.control.Button
         SavePulseList                 matlab.ui.control.Button
         OpenPulseList                 matlab.ui.control.Button
-        PulseSpan                     matlab.ui.control.NumericEditField
-        PulseSpanLabel                matlab.ui.control.Label
-        PulseProminence               matlab.ui.control.NumericEditField
-        PulseProminenceLabel          matlab.ui.control.Label
-        PulseBaseline                 matlab.ui.control.NumericEditField
-        PulseBaselineLabel            matlab.ui.control.Label
+        UIAxesPulse                   matlab.ui.control.UIAxes
+
         PulseNTableListLabel          matlab.ui.control.Label
+        PulseNList                    matlab.ui.control.Table
         regressionHeader              matlab.ui.control.Label
         NEquationLabel                matlab.ui.control.Label
         useNButton                    matlab.ui.control.Button
@@ -114,31 +125,29 @@ classdef AppV1 < matlab.apps.AppBase
         useSfButton                   matlab.ui.control.Button
         labelSfA                      matlab.ui.control.Label
         labelSfB                      matlab.ui.control.Label
-        PulseNList                    matlab.ui.control.Table
-        FindPulsePeaksButton          matlab.ui.control.Button
-        dataPreviewTable              matlab.ui.control.Table
+        
         FitTab                        matlab.ui.container.Tab
-        UIAxesFit                     matlab.ui.control.UIAxes
         ImportTraceButton             matlab.ui.control.Button
-        FitSpan                       matlab.ui.control.NumericEditField
         FitSpanLabel                  matlab.ui.control.Label
-        FitProminence                 matlab.ui.control.NumericEditField
+        FitSpan                       matlab.ui.control.NumericEditField
         FitProminenceLabel            matlab.ui.control.Label
-        FitThreshold                  matlab.ui.control.NumericEditField
+        FitProminence                 matlab.ui.control.NumericEditField
         FitThresholdLabel             matlab.ui.control.Label
+        FitThreshold                  matlab.ui.control.NumericEditField
         FindFitPeaksButton            matlab.ui.control.Button
         ComputeKDValues               matlab.ui.control.Button
         DisplayWithModeling           matlab.ui.control.CheckBox
-        Info                          matlab.ui.container.Tab
-        InfoTitle                     matlab.ui.control.Label
-        InfoVersion                   matlab.ui.control.Label
-        InfoCitation                  matlab.ui.control.Label
-        cupPaper                      matlab.ui.control.Hyperlink
-        InfoCredits                   matlab.ui.control.Label
+        UIAxesFit                     matlab.ui.control.UIAxes
     end
     
     % Callbacks that handle component events
     methods (Access = private)
+
+        function appInfo(app)
+            cover = uilabel(app.UIFigure, 'Position', [0 0 10000 10000]);
+            appInfoPopup();
+            delete(cover);
+        end
 
         function saveState(app)
             filename = ['Session ' + string(datetime) + '.mat'];
@@ -156,6 +165,7 @@ classdef AppV1 < matlab.apps.AppBase
                                   'Vinj', app.InjectionVolume.Value, ...
                                   'classicPlot', {getappdata(app.UIAxesClassic, 'rawData')}, ...
                                   'extrusionDuration', app.ExtrusionDuration.Value, ...
+                                  'CCCorCPC', app.CCCCPCSwitch.Value, ...
                                   'extrusionPlot', {getappdata(app.UIAxesExtrusion, 'rawData')}, ...
                                   'dualDuration', app.DualDuration.Value, ...
                                   'dualPlot', {getappdata(app.UIAxesDual, 'rawData')}, ...
@@ -243,6 +253,7 @@ classdef AppV1 < matlab.apps.AppBase
             app.ColumnDeadVolume.Value = inputsToSave.Vd;
             app.InjectionVolume.Value = inputsToSave.Vinj;
             app.ExtrusionDuration.Value = inputsToSave.extrusionDuration;
+            app.CCCCPCSwitch.Value = inputsToSave.CCCorCPC;
             app.DualDuration.Value = inputsToSave.dualDuration;
             app.SwitchTimeList.Data = inputsToSave.switchTimeList;
             app.PulseNList.Data = inputsToSave.PulseNList;
@@ -894,7 +905,11 @@ classdef AppV1 < matlab.apps.AppBase
             end
             
             if contains(identifier, 'Extrusion')
-                [Vspan, Cout, Xtot, Ytot, Vbc] = EECCC_V8(KD, Vc, Sf, X, Y);
+                if string(app.CCCCPCSwitch.Value) == 'CCC'
+                    [Vspan, Cout, Xtot, Ytot, Vbc] = EECCC_V8(KD, Vc, Sf, X, Y);
+                elseif string(app.CCCCPCSwitch.Value) == 'CPC'
+                    [Vspan, Cout, Xtot, Ytot, Vbc] = ECPC_V1(KD, Vc, Sf, X, Y);
+                end
 
                 Vspan = Vspan + deadVolume;
                 Vbc = Vbc + deadVolume;
@@ -958,8 +973,14 @@ classdef AppV1 < matlab.apps.AppBase
                 end
                 
                 if app.ExtrusionLinesCheckbox.Value
-                    xline(app.UIAxesExtrusion, columnVolumeExtrudedTime, '-.r', sweepStartLabel);
-                    xline(app.UIAxesExtrusion, sweepTime, '--b', sweepEndLabel);
+                    if string(app.CCCCPCSwitch.Value) == 'CCC'
+                        xline(app.UIAxesExtrusion, columnVolumeExtrudedTime, '-.r', sweepStartLabel);
+                        xline(app.UIAxesExtrusion, sweepTime, '--b', sweepEndLabel);
+                        
+                    elseif string(app.CCCCPCSwitch.Value) == 'CPC'
+                        sweepStartLabel = sprintf(['Extrusion Start\n']) + string(elutionTime) + LinesLabelsUnits;
+                        xline(app.UIAxesExtrusion, columnVolumeExtrudedTime, '-.b', sweepStartLabel);
+                    end
                 end
 
                 if app.ExtrusionPeaksCheckbox.Value
@@ -1102,6 +1123,7 @@ classdef AppV1 < matlab.apps.AppBase
                                   'Vinj', app.InjectionVolume.Value, ...
                                   'VinjAddVd', app.includeInjectionVolCheckbox.Value, ...
                                   'ExtrusionDuration', app.ExtrusionDuration.Value, ...
+                                  'CCCorCPC', app.CCCCPCSwitch.Value, ...
                                   'DualDuration', app.DualDuration.Value);
 
                 if string(app.StationaryPhaseSwitch.Value) == 'Set Sf'
@@ -1177,10 +1199,11 @@ classdef AppV1 < matlab.apps.AppBase
             app.OpenMenu.Text = 'Open';
             app.OpenMenu.Accelerator = 'O';
             app.OpenMenu.MenuSelectedFcn = @(src,event) loadState(app);
-
+            
             % Create AboutMenu
             app.AboutMenu = uimenu(app.FileMenu);
             app.AboutMenu.Text = 'About';
+            app.AboutMenu.MenuSelectedFcn = @(src,event) appInfo(app);
             
             % Create TabGroup
             app.TabGroup = uitabgroup(app.UIFigure);
@@ -1454,20 +1477,29 @@ classdef AppV1 < matlab.apps.AppBase
             app.ExportButtonExtrusion.Text = 'Export';
             app.ExportButtonExtrusion.Tag = 'ExtrusionExport';
 
+            % Create CCC/CPC Switch
+            app.CCCCPCSwitch = uiswitch(app.ElutionExtrusionTab, 'slider', 'ValueChangedFcn',@(src,event) CUPPrediction(app)); %TODO: Write new function?
+            app.CCCCPCSwitch.Items = {'CCC', 'CPC'};
+            app.CCCCPCSwitch.Position = [40 445 45 20];
+            app.CCCCPCSwitch.Orientation = 'horizontal';
+            app.CCCCPCSwitch.Value = 'CCC';
+            app.CCCCPCSwitch.Tag = 'Switch';
+
             % Create ExtrusionDurationLabel
             app.ExtrusionDurationLabel = uilabel(app.ElutionExtrusionTab);
-            app.ExtrusionDurationLabel.HorizontalAlignment = 'right';
-            app.ExtrusionDurationLabel.Position = [49 445 104 22];
+            app.ExtrusionDurationLabel.HorizontalAlignment = 'center';
+            app.ExtrusionDurationLabel.Position = [120 434 60 44];
+            app.ExtrusionDurationLabel.WordWrap = 'on';
             app.ExtrusionDurationLabel.Text = 'Extrusion Duration';
 
             % Create ExtrusionDuration
             app.ExtrusionDuration = uieditfield(app.ElutionExtrusionTab, 'numeric');
-            app.ExtrusionDuration.Position = [165 445 29 22];
+            app.ExtrusionDuration.Position = [180 445 29 22];
 
             % Create ExtrusionDurationLabelUnits
             app.ExtrusionDurationLabelUnits = uilabel(app.ElutionExtrusionTab);
             app.ExtrusionDurationLabelUnits.HorizontalAlignment = 'center';
-            app.ExtrusionDurationLabelUnits.Position = [200 445 29 22];
+            app.ExtrusionDurationLabelUnits.Position = [207 445 29 22];
             app.ExtrusionDurationLabelUnits.Text = 'min';
 
             %Create extrusionModelSumCheckbox
@@ -1526,12 +1558,12 @@ classdef AppV1 < matlab.apps.AppBase
 
             % Create DualDuration
             app.DualDuration = uieditfield(app.dualModeTab, 'numeric');
-            app.DualDuration.Position = [165 445 29 22];
+            app.DualDuration.Position = [180 445 29 22];
 
             % Create DualDurationLabelUnits
             app.DualDurationLabelUnits = uilabel(app.dualModeTab);
             app.DualDurationLabelUnits.HorizontalAlignment = 'center';
-            app.DualDurationLabelUnits.Position = [200 445 29 22];
+            app.DualDurationLabelUnits.Position = [207 445 29 22];
             app.DualDurationLabelUnits.Text = 'min';
 
             %Create DualPeaksCheckbox
@@ -1881,41 +1913,6 @@ classdef AppV1 < matlab.apps.AppBase
                 'Value', 0,...
                 'Position', [570 449 130 15]);
             set(app.DisplayWithModeling, 'Tooltip', 'Currently only displays on Classic or Elution-Extrusion models.')
-            
-            % Create appInfoTab
-            app.Info = uitab(app.TabGroup);
-            app.Info.Title = 'App Info';
-            app.Info.Tag = 'Info';
-
-            app.InfoTitle = uilabel(app.Info);
-            app.InfoTitle.HorizontalAlignment = 'center';
-            app.InfoTitle.FontSize = 24;
-            app.InfoTitle.FontWeight = 'bold';
-            app.InfoTitle.Position = [140 320 500 50];
-            app.InfoTitle.Text = 'CUP Modeler';
-
-            app.InfoVersion = uilabel(app.Info);
-            app.InfoVersion.HorizontalAlignment = 'center';
-            app.InfoVersion.FontSize = 18;
-            app.InfoVersion.Position = [140 305 500 25];
-            app.InfoVersion.Text = 'Version 1.0';
-
-            app.InfoCitation = uilabel(app.Info);
-            app.InfoCitation.HorizontalAlignment = 'center';
-            app.InfoCitation.FontSize = 12;
-            app.InfoCitation.Position = [85 270 500 20];
-            app.InfoCitation.Text = 'To learn more, ';
-            
-            app.InfoCredits = uilabel(app.Info);
-            app.InfoCredits.HorizontalAlignment = 'center';
-            app.InfoCredits.FontSize = 12;
-            app.InfoCredits.Position = [140 250 500 20];
-            app.InfoCredits.Text = 'Mathematical modeling by Hoon Choi. Interface by Manar Alherech.';
-
-            app.cupPaper = uihyperlink(app.Info);
-            app.cupPaper.Text = 'check out our work.';
-            app.cupPaper.URL = 'https://www.sciencedirect.com/science/article/pii/S1383586621020347';
-            app.cupPaper.Position = [375 270 300 20];
             
             app.AscDescLabel = uilabel(app.UIFigure);
             app.AscDescLabel.HorizontalAlignment = 'center';
