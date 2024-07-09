@@ -148,6 +148,9 @@ classdef AppV1 < matlab.apps.AppBase
         function saveState(app)
             filename = ['Session ' + string(datetime) + '.mat'];
             [filename, directory] = uiputfile('.mat', 'Save session', filename);
+            if filename == 0
+                return
+            end
             inputsToSave = struct('F', app.FlowRate.Value, ...
                                   'colVol', app.ColumnVolume.Value, ...
                                   'elutionDuration', app.ElutionDuration.Value, ...
@@ -470,6 +473,9 @@ classdef AppV1 < matlab.apps.AppBase
         function saveCompounds(app)
             filename = ['Compound List ' + string(datetime) + '.xls'];
             [filename] = uiputfile('.xls', 'Save compound list', filename);
+            if filename == 0
+                return
+            end
             compoundTableContents = get(app.compoundList, 'Data');
             writecell(compoundTableContents, filename);
         end
@@ -496,6 +502,9 @@ classdef AppV1 < matlab.apps.AppBase
         function saveSwitchTimeList(app)
             filename = ['Switching Times ' + string(datetime) + '.xls'];
             [filename] = uiputfile('.xls', 'Save switch time list', filename);
+            if filename == 0
+                return
+            end
             switchTimeTableContents = get(app.SwitchTimeList, 'Data');
             writecell(switchTimeTableContents, filename);
         end
@@ -509,6 +518,9 @@ classdef AppV1 < matlab.apps.AppBase
         function savePulseList(app)
             filename = ['Pulse List ' + string(datetime) + '.xls'];
             [filename] = uiputfile('.xls', 'Save pulse list', filename);
+            if filename == 0
+                return
+            end
             pulseListTableContents = get(app.PulseNList, 'Data');
             writematrix(pulseListTableContents, filename);
         end
@@ -1179,6 +1191,10 @@ classdef AppV1 < matlab.apps.AppBase
                 filename = [ExportIdentifier + ' ' + app.VolumeTimeSwitch.Value + ' export ' + string(datetime)];
 
                 [filename, directory] = uiputfile('.xlsx', 'Title for exported files?', filename);
+                
+                if filename == 0
+                    return
+                end
 
                 filename = strcat(directory, filename);
 
