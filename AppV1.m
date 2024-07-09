@@ -62,8 +62,8 @@ classdef AppV1 < matlab.apps.AppBase
         
         ElutionExtrusionTab           matlab.ui.container.Tab
         CCCCPCSwitch                  matlab.ui.control.Switch
-        ExtrusionDuration             matlab.ui.control.NumericEditField
         ExtrusionDurationLabel        matlab.ui.control.Label
+        ExtrusionDuration             matlab.ui.control.NumericEditField
         ExtrusionDurationLabelUnits   matlab.ui.control.Label
         extrusionModelSumCheckbox     matlab.ui.control.CheckBox
         PlotButtonExtrusion           matlab.ui.control.Button
@@ -74,10 +74,10 @@ classdef AppV1 < matlab.apps.AppBase
         UIAxesExtrusion               matlab.ui.control.UIAxes
         
         dualModeTab                   matlab.ui.container.Tab
-        DualDuration                  matlab.ui.control.NumericEditField
         DualDurationLabel             matlab.ui.control.Label
+        DualDuration                  matlab.ui.control.NumericEditField
         DualDurationLabelUnits        matlab.ui.control.Label
-        dualModelSumCheckbox     matlab.ui.control.CheckBox
+        dualModelSumCheckbox          matlab.ui.control.CheckBox
         PlotButtonDual                matlab.ui.control.Button
         ExportButtonDual              matlab.ui.control.Button
         DualPeaksCheckbox             matlab.ui.control.CheckBox
@@ -86,7 +86,7 @@ classdef AppV1 < matlab.apps.AppBase
         UIAxesDual                    matlab.ui.control.UIAxes
         
         MultipleDualModeTab           matlab.ui.container.Tab
-        multiModelSumCheckbox     matlab.ui.control.CheckBox
+        multiModelSumCheckbox         matlab.ui.control.CheckBox
         PlotButtonMulti               matlab.ui.control.Button
         ExportButtonMulti             matlab.ui.control.Button
         MultiPeaksCheckbox            matlab.ui.control.CheckBox
@@ -145,40 +145,34 @@ classdef AppV1 < matlab.apps.AppBase
     % Callbacks that handle component events
     methods (Access = private)
 
-        function appInfo(app)
-            cover = uilabel(app.UIFigure, 'Position', [0 0 10000 10000]);
-            appInfoPopup();
-            delete(cover);
-        end
-
         function saveState(app)
             filename = ['Session ' + string(datetime) + '.mat'];
             [filename, directory] = uiputfile('.mat', 'Save session', filename);
             inputsToSave = struct('F', app.FlowRate.Value, ...
                                   'colVol', app.ColumnVolume.Value, ...
-                                  'timeVolToggle', app.VolumeTimeSwitch.Value, ...
-                                  'AscDesc', app.AscDesc.Value, ...
+                                  'elutionDuration', app.ElutionDuration.Value, ...
+                                  'Vinj', app.InjectionVolume.Value, ...
                                   'SfCoeff', app.StationaryPhaseSwitch.Value,...
                                   'NCoeff', app.ColumnEfficiencySwitch.Value, ...
-                                  'compoundList', {app.compoundList.Data}, ...
-                                  'injVolChkBx', app.includeInjectionVolCheckbox.Value, ...
-                                  'elutionDuration', app.ElutionDuration.Value, ...
+                                  'timeVolToggle', app.VolumeTimeSwitch.Value, ...
                                   'Vd', app.ColumnDeadVolume.Value, ...
-                                  'Vinj', app.InjectionVolume.Value, ...
+                                  'injVolChkBx', app.includeInjectionVolCheckbox.Value, ...
+                                  'compoundList', {app.compoundList.Data}, ...
+                                  'AscDesc', app.AscDesc.Value, ...
                                   'classicPlot', {getappdata(app.UIAxesClassic, 'rawData')}, ...
-                                  'extrusionDuration', app.ExtrusionDuration.Value, ...
                                   'CCCorCPC', app.CCCCPCSwitch.Value, ...
+                                  'extrusionDuration', app.ExtrusionDuration.Value, ...
                                   'extrusionPlot', {getappdata(app.UIAxesExtrusion, 'rawData')}, ...
                                   'dualDuration', app.DualDuration.Value, ...
                                   'dualPlot', {getappdata(app.UIAxesDual, 'rawData')}, ...
-                                  'switchTimeList', {app.SwitchTimeList.Data}, ...
                                   'multiPlot', {getappdata(app.UIAxesMulti, 'rawData')}, ...
+                                  'switchTimeList', {app.SwitchTimeList.Data}, ...
                                   'multiPositionPlot', {getappdata(app.UIAxesMultiPosition, 'rawData')}, ...
-                                  'PulseNList', {app.PulseNList.Data},...
                                   'pulseSpan', app.PulseSpan.Value, ...
                                   'PulseProminence', app.PulseProminence.Value, ...
                                   'PulseBaseline', app.PulseBaseline.Value, ...
                                   'pulsePlot', app.UIAxesPulse, ...
+                                  'PulseNList', {app.PulseNList.Data},...
                                   'FitSpan', app.FitSpan.Value, ...
                                   'FitProminence', app.FitProminence.Value, ...
                                   'FitThreshold', app.FitThreshold.Value, ...
@@ -247,26 +241,28 @@ classdef AppV1 < matlab.apps.AppBase
 
             app.FlowRate.Value = inputsToSave.F;
             app.ColumnVolume.Value = inputsToSave.colVol;
+            app.ElutionDuration.Value = inputsToSave.elutionDuration;
+            app.InjectionVolume.Value = inputsToSave.Vinj;
             app.VolumeTimeSwitch.Value = inputsToSave.timeVolToggle;
-            app.AscDesc.Value = inputsToSave.AscDesc;
+            app.ColumnDeadVolume.Value = inputsToSave.Vd;
             app.includeInjectionVolCheckbox.Value = inputsToSave.injVolChkBx;
             app.compoundList.Data = inputsToSave.compoundList;
-            app.ElutionDuration.Value = inputsToSave.elutionDuration;
-            app.ColumnDeadVolume.Value = inputsToSave.Vd;
-            app.InjectionVolume.Value = inputsToSave.Vinj;
-            app.ExtrusionDuration.Value = inputsToSave.extrusionDuration;
+            app.AscDesc.Value = inputsToSave.AscDesc;
             app.CCCCPCSwitch.Value = inputsToSave.CCCorCPC;
+            app.ExtrusionDuration.Value = inputsToSave.extrusionDuration;
             app.DualDuration.Value = inputsToSave.dualDuration;
             app.SwitchTimeList.Data = inputsToSave.switchTimeList;
-            app.PulseNList.Data = inputsToSave.PulseNList;
             app.PulseSpan.Value = inputsToSave.pulseSpan;
             app.PulseProminence.Value = inputsToSave.PulseProminence;
             app.PulseBaseline.Value = inputsToSave.PulseBaseline;
             app.UIAxesPulse = inputsToSave.pulsePlot;
+            app.PulseNList.Data = inputsToSave.PulseNList;
             app.FitSpan.Value = inputsToSave.FitSpan;
             app.FitProminence.Value = inputsToSave.FitProminence;
             app.FitThreshold.Value = inputsToSave.FitThreshold;
             app.UIAxesFit = inputsToSave.FitPlot;
+
+            app.fitCoefficients();
             
             plot(app.UIAxesClassic, inputsToSave.classicPlot{1}, inputsToSave.classicPlot{2}, 'linewidth', 2.0);
             plot(app.UIAxesExtrusion, inputsToSave.extrusionPlot{1}, inputsToSave.extrusionPlot{2}, 'linewidth', 2.0);
@@ -276,68 +272,10 @@ classdef AppV1 < matlab.apps.AppBase
 
         end
 
-        function toggleVolumeTime(app)
-            F = app.FlowRate.Value;
-
-            if string(app.VolumeTimeSwitch.Value) == 'Volume'
-                app.ElutionDurationLabel.Text = 'Elution Volume';
-                app.ElutionDurationLabelUnits.Text = 'mL';
-
-                app.compoundList.ColumnName(4) = {'Elution Vol. (mL)'};
-
-                app.ExtrusionDurationLabel.Text = 'Extrusion Volume';
-                app.ExtrusionDurationLabelUnits.Text = 'mL';
-
-                app.DualDurationLabel.Text = 'Dual Mode Volume';
-                app.DualDurationLabelUnits.Text = 'mL';
-
-                app.UIAxesClassic.XLabel.String = 'Elution Volume (mL)';
-                app.UIAxesExtrusion.XLabel.String = 'Elution Volume (mL)';
-                app.UIAxesDual.XLabel.String = 'Elution Volume (mL)';
-                app.UIAxesMulti.XLabel.String = 'Elution Volume (mL)';
-                app.UIAxesMultiPosition.XLabel.String = 'Elution Volume (mL)';
-
-                app.SwitchTimeList.ColumnName{2} = 'mL';
-                app.SwitchTimeListLabel.Text = 'Switch Volumes';
-
-                app.ElutionDuration.Value = app.ElutionDuration.Value*F;
-                app.ExtrusionDuration.Value = app.ExtrusionDuration.Value*F;
-                app.DualDuration.Value = app.DualDuration.Value*F;
-
-                for i = 1:height(app.SwitchTimeList.Data)
-                    app.SwitchTimeList.Data(i,2) = {cell2mat(app.SwitchTimeList.Data(i,2))*F};
-                end
-
-            elseif string(app.VolumeTimeSwitch.Value) == 'Time'
-                app.ElutionDurationLabel.Text = 'Elution Duration';
-                app.ElutionDurationLabelUnits.Text = 'min';
-
-                app.compoundList.ColumnName(4) = {'Ret. Time (min)'};
-                
-                app.ExtrusionDurationLabel.Text = 'Extrusion Duration';
-                app.ExtrusionDurationLabelUnits.Text = 'min';
-                
-                app.DualDurationLabel.Text = 'Dual Mode Duration';
-                app.DualDurationLabelUnits.Text = 'min';
-                
-                app.UIAxesClassic.XLabel.String = 'Elution Duration (min)';
-                app.UIAxesExtrusion.XLabel.String = 'Elution Duration (min)';
-                app.UIAxesDual.XLabel.String = 'Elution Duration (min)';
-                app.UIAxesMulti.XLabel.String = 'Elution Duration (min)';
-                app.UIAxesMultiPosition.XLabel.String = 'Elution Duration (min)';
-                
-                app.SwitchTimeList.ColumnName{2} = 'min';
-                app.SwitchTimeListLabel.Text = 'Switch Times';
-
-                app.ElutionDuration.Value = app.ElutionDuration.Value/F;
-                app.ExtrusionDuration.Value = app.ExtrusionDuration.Value/F;
-                app.DualDuration.Value = app.DualDuration.Value/F;
-
-                for i = 1:height(app.SwitchTimeList.Data)
-                    app.SwitchTimeList.Data(i,2) = {cell2mat(app.SwitchTimeList.Data(i,2))/F};
-                end
-            end
-            CUPPrediction(app);
+        function appInfo(app)
+            cover = uilabel(app.UIFigure, 'Position', [0 0 10000 10000]);
+            appInfoPopup();
+            delete(cover);
         end
 
         function toggleStationary(app)
@@ -446,6 +384,70 @@ classdef AppV1 < matlab.apps.AppBase
             app.CUPPrediction();
         end
 
+        function toggleVolumeTime(app)
+            F = app.FlowRate.Value;
+
+            if string(app.VolumeTimeSwitch.Value) == 'Volume'
+                app.ElutionDurationLabel.Text = 'Elution Volume';
+                app.ElutionDurationLabelUnits.Text = 'mL';
+
+                app.compoundList.ColumnName(4) = {'Elution Vol. (mL)'};
+
+                app.ExtrusionDurationLabel.Text = 'Extrusion Volume';
+                app.ExtrusionDurationLabelUnits.Text = 'mL';
+
+                app.DualDurationLabel.Text = 'Dual Mode Volume';
+                app.DualDurationLabelUnits.Text = 'mL';
+
+                app.UIAxesClassic.XLabel.String = 'Elution Volume (mL)';
+                app.UIAxesExtrusion.XLabel.String = 'Elution Volume (mL)';
+                app.UIAxesDual.XLabel.String = 'Elution Volume (mL)';
+                app.UIAxesMulti.XLabel.String = 'Elution Volume (mL)';
+                app.UIAxesMultiPosition.XLabel.String = 'Elution Volume (mL)';
+
+                app.SwitchTimeList.ColumnName{2} = 'mL';
+                app.SwitchTimeListLabel.Text = 'Switch Volumes';
+
+                app.ElutionDuration.Value = app.ElutionDuration.Value*F;
+                app.ExtrusionDuration.Value = app.ExtrusionDuration.Value*F;
+                app.DualDuration.Value = app.DualDuration.Value*F;
+
+                for i = 1:height(app.SwitchTimeList.Data)
+                    app.SwitchTimeList.Data(i,2) = {cell2mat(app.SwitchTimeList.Data(i,2))*F};
+                end
+
+            elseif string(app.VolumeTimeSwitch.Value) == 'Time'
+                app.ElutionDurationLabel.Text = 'Elution Duration';
+                app.ElutionDurationLabelUnits.Text = 'min';
+
+                app.compoundList.ColumnName(4) = {'Ret. Time (min)'};
+                
+                app.ExtrusionDurationLabel.Text = 'Extrusion Duration';
+                app.ExtrusionDurationLabelUnits.Text = 'min';
+                
+                app.DualDurationLabel.Text = 'Dual Mode Duration';
+                app.DualDurationLabelUnits.Text = 'min';
+                
+                app.UIAxesClassic.XLabel.String = 'Elution Duration (min)';
+                app.UIAxesExtrusion.XLabel.String = 'Elution Duration (min)';
+                app.UIAxesDual.XLabel.String = 'Elution Duration (min)';
+                app.UIAxesMulti.XLabel.String = 'Elution Duration (min)';
+                app.UIAxesMultiPosition.XLabel.String = 'Elution Duration (min)';
+                
+                app.SwitchTimeList.ColumnName{2} = 'min';
+                app.SwitchTimeListLabel.Text = 'Switch Times';
+
+                app.ElutionDuration.Value = app.ElutionDuration.Value/F;
+                app.ExtrusionDuration.Value = app.ExtrusionDuration.Value/F;
+                app.DualDuration.Value = app.DualDuration.Value/F;
+
+                for i = 1:height(app.SwitchTimeList.Data)
+                    app.SwitchTimeList.Data(i,2) = {cell2mat(app.SwitchTimeList.Data(i,2))/F};
+                end
+            end
+            CUPPrediction(app);
+        end
+
         function addCompoundButtonPushed(app)
             newRowPosition = height(app.compoundList.Data)+1;
             newRowPositionString = num2str(newRowPosition);
@@ -465,19 +467,6 @@ classdef AppV1 < matlab.apps.AppBase
             end
         end
 
-        function removeSpecificCompound(app)
-            if height(app.compoundList.Data) > 1
-                deletedIndex = app.compoundList.Data(:,5);
-                for i = 1:height(deletedIndex)
-                    if cell2mat(deletedIndex(i)) == 1
-                        app.compoundList.Data(i,:) = [];
-                    end
-                end
-            else 
-                app.compoundList.Data(1,5) = {false};
-            end
-        end
-
         function saveCompounds(app)
             filename = ['Compound List ' + string(datetime) + '.xls'];
             [filename] = uiputfile('.xls', 'Save compound list', filename);
@@ -489,6 +478,19 @@ classdef AppV1 < matlab.apps.AppBase
             [filename] = uigetfile('.xls');
             importedTable = array2table(readcell(filename));
             app.compoundList.Data = table2cell(importedTable);
+        end
+
+        function removeSpecificCompound(app)
+            if height(app.compoundList.Data) > 1
+                deletedIndex = app.compoundList.Data(:,5);
+                for i = 1:height(deletedIndex)
+                    if cell2mat(deletedIndex(i)) == 1
+                        app.compoundList.Data(i,:) = [];
+                    end
+                end
+            else 
+                app.compoundList.Data(1,5) = {false};
+            end
         end
 
         function saveSwitchTimeList(app)
@@ -1138,16 +1140,16 @@ classdef AppV1 < matlab.apps.AppBase
 
                 inputsToSave = struct('FlowRate', app.FlowRate.Value, ...
                                   'ColumnVolume', app.ColumnVolume.Value, ...
-                                  'Monitoring', app.VolumeTimeSwitch.Value, ...
-                                  'MobilePhase', app.AscDesc.Value, ...
+                                  'ElutionDuration', app.ElutionDuration.Value, ...
+                                  'Vinj', app.InjectionVolume.Value, ...
                                   'SfCoeff', app.StationaryPhaseSwitch.Value,...
                                   'NCoeff', app.ColumnEfficiencySwitch.Value, ...
-                                  'ElutionDuration', app.ElutionDuration.Value, ...
+                                  'XAxis', app.VolumeTimeSwitch.Value, ...
                                   'Vd', app.ColumnDeadVolume.Value, ...
-                                  'Vinj', app.InjectionVolume.Value, ...
                                   'VinjAddVd', app.includeInjectionVolCheckbox.Value, ...
-                                  'ExtrusionDuration', app.ExtrusionDuration.Value, ...
+                                  'MobilePhase', app.AscDesc.Value, ...
                                   'CCCorCPC', app.CCCCPCSwitch.Value, ...
+                                  'ExtrusionDuration', app.ExtrusionDuration.Value, ...
                                   'DualDuration', app.DualDuration.Value);
 
                 if string(app.StationaryPhaseSwitch.Value) == 'Set Sf'
@@ -1228,23 +1230,15 @@ classdef AppV1 < matlab.apps.AppBase
             app.AboutMenu = uimenu(app.FileMenu);
             app.AboutMenu.Text = 'About';
             app.AboutMenu.MenuSelectedFcn = @(src,event) appInfo(app);
-            
-            % Create TabGroup
-            app.TabGroup = uitabgroup(app.UIFigure);
-            app.TabGroup.Position = [725 0 717 500];
 
-            % Create ElutionDurationLabelUnits
-            app.ElutionDurationLabelUnits = uilabel(app.UIFigure);
-            app.ElutionDurationLabelUnits.HorizontalAlignment = 'center';
-            app.ElutionDurationLabelUnits.WordWrap = 'on';
-            app.ElutionDurationLabelUnits.Position = [487 416 34 22];
-            app.ElutionDurationLabelUnits.Text = 'min';
-            
-            % Create FlowRateLabelUnits
-            app.FlowRateLabelUnits = uilabel(app.UIFigure);
-            app.FlowRateLabelUnits.HorizontalAlignment = 'right';
-            app.FlowRateLabelUnits.Position = [123 416 46 22];
-            app.FlowRateLabelUnits.Text = 'mL/min';
+
+            % Create ColumnPropertiesLabel
+            app.ColumnPropertiesLabel = uilabel(app.UIFigure);
+            app.ColumnPropertiesLabel.HorizontalAlignment = 'center';
+            app.ColumnPropertiesLabel.FontSize = 18;
+            app.ColumnPropertiesLabel.FontWeight = 'bold';
+            app.ColumnPropertiesLabel.Position = [276 460 166 24];
+            app.ColumnPropertiesLabel.Text = 'Column Properties';
             
             % Create FlowRateLabel
             app.FlowRateLabel = uilabel(app.UIFigure);
@@ -1260,12 +1254,12 @@ classdef AppV1 < matlab.apps.AppBase
             app.FlowRate.RoundFractionalValues = 'off';
             app.FlowRate.Position = [73 416 51 22];
             app.FlowRate.Value = 5;
-            
-            % Create ColumnVolumeLabelUnits
-            app.ColumnVolumeLabelUnits = uilabel(app.UIFigure);
-            app.ColumnVolumeLabelUnits.HorizontalAlignment = 'right';
-            app.ColumnVolumeLabelUnits.Position = [310 416 25 22];
-            app.ColumnVolumeLabelUnits.Text = 'mL';
+                        
+            % Create FlowRateLabelUnits
+            app.FlowRateLabelUnits = uilabel(app.UIFigure);
+            app.FlowRateLabelUnits.HorizontalAlignment = 'right';
+            app.FlowRateLabelUnits.Position = [123 416 46 22];
+            app.FlowRateLabelUnits.Text = 'mL/min';
             
             % Create ColumnVolumeLabel
             app.ColumnVolumeLabel = uilabel(app.UIFigure);
@@ -1281,6 +1275,12 @@ classdef AppV1 < matlab.apps.AppBase
             app.ColumnVolume.RoundFractionalValues = 'off';
             app.ColumnVolume.Position = [268 416 44 22];
             app.ColumnVolume.Value = 81;
+                        
+            % Create ColumnVolumeLabelUnits
+            app.ColumnVolumeLabelUnits = uilabel(app.UIFigure);
+            app.ColumnVolumeLabelUnits.HorizontalAlignment = 'right';
+            app.ColumnVolumeLabelUnits.Position = [310 416 25 22];
+            app.ColumnVolumeLabelUnits.Text = 'mL';
             
             % Create ElutionDurationLabel
             app.ElutionDurationLabel = uilabel(app.UIFigure);
@@ -1293,12 +1293,13 @@ classdef AppV1 < matlab.apps.AppBase
             app.ElutionDuration = uieditfield(app.UIFigure, 'numeric');
             app.ElutionDuration.Position = [437 416 51 22];
             app.ElutionDuration.Value = 60;
-            
-            % Create InjectionVolumeLabelUnits
-            app.InjectionVolumeLabelUnits = uilabel(app.UIFigure);
-            app.InjectionVolumeLabelUnits.HorizontalAlignment = 'right';
-            app.InjectionVolumeLabelUnits.Position = [656 416 25 22];
-            app.InjectionVolumeLabelUnits.Text = 'mL';
+
+            % Create ElutionDurationLabelUnits
+            app.ElutionDurationLabelUnits = uilabel(app.UIFigure);
+            app.ElutionDurationLabelUnits.HorizontalAlignment = 'center';
+            app.ElutionDurationLabelUnits.WordWrap = 'on';
+            app.ElutionDurationLabelUnits.Position = [487 416 34 22];
+            app.ElutionDurationLabelUnits.Text = 'min';
             
             % Create InjectionVolumeLabel
             app.InjectionVolumeLabel = uilabel(app.UIFigure);
@@ -1313,6 +1314,12 @@ classdef AppV1 < matlab.apps.AppBase
             app.InjectionVolume.Limits = [0 Inf];
             app.InjectionVolume.Position = [614 416 44 22];
             app.InjectionVolume.Value = 1;
+
+            % Create InjectionVolumeLabelUnits
+            app.InjectionVolumeLabelUnits = uilabel(app.UIFigure);
+            app.InjectionVolumeLabelUnits.HorizontalAlignment = 'right';
+            app.InjectionVolumeLabelUnits.Position = [656 416 25 22];
+            app.InjectionVolumeLabelUnits.Text = 'mL';
             
             % Create StationaryPhaseRetentionLabel
             app.StationaryPhaseRetentionLabel = uilabel(app.UIFigure);
@@ -1343,6 +1350,13 @@ classdef AppV1 < matlab.apps.AppBase
             app.ColumnEfficiencyNLabel.WordWrap = 'on';
             app.ColumnEfficiencyNLabel.Position = [230 350 200 57];
             app.ColumnEfficiencyNLabel.Text = 'Column Efficiency (N)';
+                        
+            % Create ColumnEfficiencyN
+            app.ColumnEfficiencyN = uieditfield(app.UIFigure, 'numeric');
+            app.ColumnEfficiencyN.UpperLimitInclusive = 'off';
+            app.ColumnEfficiencyN.Limits = [1 Inf];
+            app.ColumnEfficiencyN.Position = [305 345 51 22];
+            app.ColumnEfficiencyN.Value = 400;
             
             % Create ColumnEfficiencySwitch
             app.ColumnEfficiencySwitch = uiswitch(app.UIFigure, 'slider', 'ValueChangedFcn',@(src,event) toggleEfficiencyAndPlot(app));
@@ -1352,20 +1366,14 @@ classdef AppV1 < matlab.apps.AppBase
             app.ColumnEfficiencySwitch.Tag = 'Switch';
             set(app.ColumnEfficiencySwitch, 'Tooltip', 'Coefficients must be obtained from pulse tests for each solvent system at various flow rates.')
             
-            % Create ColumnEfficiencyN
-            app.ColumnEfficiencyN = uieditfield(app.UIFigure, 'numeric');
-            app.ColumnEfficiencyN.UpperLimitInclusive = 'off';
-            app.ColumnEfficiencyN.Limits = [1 Inf];
-            app.ColumnEfficiencyN.Position = [305 345 51 22];
-            app.ColumnEfficiencyN.Value = 400;
+            % Create Switch
+            app.VolumeTimeSwitch = uiswitch(app.UIFigure, 'slider', 'ValueChangedFcn',@(src,event) toggleVolumeTime(app));
+            app.VolumeTimeSwitch.Items = {'Time', 'Volume'};
+            app.VolumeTimeSwitch.Position = [475 325 45 20];
+            app.VolumeTimeSwitch.Orientation = 'vertical';
+            app.VolumeTimeSwitch.Value = 'Time';
+            app.VolumeTimeSwitch.Tag = 'Switch';
 
-            % Create ColumnDeadVolumeLabelUnits
-            app.ColumnDeadVolumeLabelUnits = uilabel(app.UIFigure);
-            app.ColumnDeadVolumeLabelUnits.HorizontalAlignment = 'center';
-            app.ColumnDeadVolumeLabelUnits.WordWrap = 'on';
-            app.ColumnDeadVolumeLabelUnits.Position = [640 350 24 14];
-            app.ColumnDeadVolumeLabelUnits.Text = 'mL';
-            
             % Create ColumnDeadVolumeLabel
             app.ColumnDeadVolumeLabel = uilabel(app.UIFigure);
             app.ColumnDeadVolumeLabel.HorizontalAlignment = 'center';
@@ -1378,25 +1386,28 @@ classdef AppV1 < matlab.apps.AppBase
             app.ColumnDeadVolume.Limits = [0 Inf];
             app.ColumnDeadVolume.Position = [592 345 45 22];
 
+            % Create ColumnDeadVolumeLabelUnits
+            app.ColumnDeadVolumeLabelUnits = uilabel(app.UIFigure);
+            app.ColumnDeadVolumeLabelUnits.HorizontalAlignment = 'center';
+            app.ColumnDeadVolumeLabelUnits.WordWrap = 'on';
+            app.ColumnDeadVolumeLabelUnits.Position = [640 350 24 14];
+            app.ColumnDeadVolumeLabelUnits.Text = 'mL';
+
             %Create includeInjectionVolCheckbox
             app.includeInjectionVolCheckbox = uicheckbox(app.UIFigure,...
                 'Text', 'Include Inj. Vol.?',...
                 'Value', 1,...
                 'Position', [568 322 120 15]);
-            
-            % Create UITable
-            initialRows = {'Compound 1' 1 1 0 0; 'Compound 2' 2 1 0 0};
-            app.compoundList = uitable(app.UIFigure,'CellEdit',@(src,event) removeSpecificCompound(app), ...
-                "ColumnName",{'Compound'; 'KD'; 'Conc. (g/L)'; 'Ret. Time (min)'; 'Delete?'}, ...
-                "ColumnFormat",{'char' [] [] [] 'logical'}, ...
-                "Data",initialRows);
-            app.compoundList.RowName = {};
-            tableStyle = uistyle("HorizontalAlignment","center");
-            addStyle(app.compoundList, tableStyle);
-            app.compoundList.ColumnSortable = true;
-            app.compoundList.ColumnEditable = true;
-            app.compoundList.Position = [73 12 585 255];
 
+
+            % Create CompoundListLabel
+            app.CompoundListLabel = uilabel(app.UIFigure);
+            app.CompoundListLabel.HorizontalAlignment = 'center';
+            app.CompoundListLabel.FontSize = 18;
+            app.CompoundListLabel.FontWeight = 'bold';
+            app.CompoundListLabel.Position = [291 286 137 24];
+            app.CompoundListLabel.Text = 'Compound List';
+            
             % Create addCompound
             app.addCompound = uibutton(app.UIFigure,'ButtonPushedFcn',@(src,event) addCompoundButtonPushed(app));
             app.addCompound.Position = [27 242 25 25];
@@ -1417,41 +1428,50 @@ classdef AppV1 < matlab.apps.AppBase
             app.openCompoundList.Position = [17 107 40 25];
             app.openCompoundList.Text = 'Open';
 
-            % Create CompoundListLabel
-            app.CompoundListLabel = uilabel(app.UIFigure);
-            app.CompoundListLabel.HorizontalAlignment = 'center';
-            app.CompoundListLabel.FontSize = 18;
-            app.CompoundListLabel.FontWeight = 'bold';
-            app.CompoundListLabel.Position = [291 286 137 24];
-            app.CompoundListLabel.Text = 'Compound List';
-
-            % Create ColumnPropertiesLabel
-            app.ColumnPropertiesLabel = uilabel(app.UIFigure);
-            app.ColumnPropertiesLabel.HorizontalAlignment = 'center';
-            app.ColumnPropertiesLabel.FontSize = 18;
-            app.ColumnPropertiesLabel.FontWeight = 'bold';
-            app.ColumnPropertiesLabel.Position = [276 460 166 24];
-            app.ColumnPropertiesLabel.Text = 'Column Properties';
+            % Create UITable
+            initialRows = {'Compound 1' 1 1 0 0; 'Compound 2' 2 1 0 0};
+            app.compoundList = uitable(app.UIFigure,'CellEdit',@(src,event) removeSpecificCompound(app), ...
+                "ColumnName",{'Compound'; 'KD'; 'Conc. (g/L)'; 'Ret. Time (min)'; 'Delete?'}, ...
+                "ColumnFormat",{'char' [] [] [] 'logical'}, ...
+                "Data",initialRows);
+            app.compoundList.RowName = {};
+            tableStyle = uistyle("HorizontalAlignment","center");
+            addStyle(app.compoundList, tableStyle);
+            app.compoundList.ColumnSortable = true;
+            app.compoundList.ColumnEditable = true;
+            app.compoundList.Position = [73 12 585 255];
+            
+            app.AscDescLabel = uilabel(app.UIFigure);
+            app.AscDescLabel.HorizontalAlignment = 'center';
+            app.AscDescLabel.FontSize = 12;
+            app.AscDescLabel.Position = [665 190 50 30];
+            app.AscDescLabel.Text = 'Mobile Phase';
+            app.AscDescLabel.WordWrap = 'on';
 
             % Create Switch
-            app.VolumeTimeSwitch = uiswitch(app.UIFigure, 'slider', 'ValueChangedFcn',@(src,event) toggleVolumeTime(app));
-            app.VolumeTimeSwitch.Items = {'Time', 'Volume'};
-            app.VolumeTimeSwitch.Position = [475 325 45 20];
-            app.VolumeTimeSwitch.Orientation = 'vertical';
-            app.VolumeTimeSwitch.Value = 'Time';
-            app.VolumeTimeSwitch.Tag = 'Switch';
+            app.AscDesc = uiswitch(app.UIFigure, 'slider', 'ValueChangedFcn',@(src,event) CUPPrediction(app));
+            app.AscDesc.Items = {'Lower', 'Upper'};
+            app.AscDesc.Position = [680 120 45 20];
+            app.AscDesc.Orientation = 'vertical';
+            app.AscDesc.Value = 'Lower';
+            app.AscDesc.Tag = 'Switch';
+
+            
+            % Create TabGroup
+            app.TabGroup = uitabgroup(app.UIFigure);
+            app.TabGroup.Position = [725 0 750 500];
+
 
             % Create ClassicElutionTab
             app.ClassicElutionTab = uitab(app.TabGroup);
             app.ClassicElutionTab.Title = 'Classic Elution';
             app.ClassicElutionTab.Tag = 'ClassicPlot';
 
-            % Create UIAxesClassic
-            app.UIAxesClassic = uiaxes(app.ClassicElutionTab);
-            xlabel(app.UIAxesClassic, 'Elution Time')
-            ylabel(app.UIAxesClassic, 'Concentration')
-            zlabel(app.UIAxesClassic, 'Z')
-            app.UIAxesClassic.Position = [8 10 695 430];
+            %Create classicModelSumCheckbox
+            app.classicModelSumCheckbox = uicheckbox(app.ClassicElutionTab,...
+                'Text', 'Sum?',...
+                'Value', 0,...
+                'Position', [240 450 60 15]);
 
             % Create PlotButtonClassic
             app.PlotButtonClassic = uibutton(app.ClassicElutionTab, 'ButtonPushedFcn',@(src,event) CUPPrediction(app));
@@ -1471,35 +1491,18 @@ classdef AppV1 < matlab.apps.AppBase
                 'Value', 1,...
                 'Position', [460 450 102 15]);
 
-            %Create classicModelSumCheckbox
-            app.classicModelSumCheckbox = uicheckbox(app.ClassicElutionTab,...
-                'Text', 'Sum?',...
-                'Value', 0,...
-                'Position', [240 450 60 15]);
+            % Create UIAxesClassic
+            app.UIAxesClassic = uiaxes(app.ClassicElutionTab);
+            xlabel(app.UIAxesClassic, 'Elution Time')
+            ylabel(app.UIAxesClassic, 'Concentration')
+            zlabel(app.UIAxesClassic, 'Z')
+            app.UIAxesClassic.Position = [8 10 695 430];
+
 
             % Create ElutionExtrusionTab
             app.ElutionExtrusionTab = uitab(app.TabGroup);
             app.ElutionExtrusionTab.Title = 'Elution-Extrusion';
             app.ElutionExtrusionTab.Tag = 'ExtrusionPlot';
-
-            % Create UIAxesExtrusion
-            app.UIAxesExtrusion = uiaxes(app.ElutionExtrusionTab);
-            xlabel(app.UIAxesExtrusion, 'Elution Time')
-            ylabel(app.UIAxesExtrusion, 'Concentration')
-            zlabel(app.UIAxesExtrusion, 'Z')
-            app.UIAxesExtrusion.Position = [8 10 695 430];
-
-            % Create PlotButton_3
-            app.PlotButtonExtrusion = uibutton(app.ElutionExtrusionTab, 'ButtonPushedFcn',@(src,event) CUPPrediction(app));
-            app.PlotButtonExtrusion.Position = [297 445 68 23];
-            app.PlotButtonExtrusion.Text = 'Plot';
-            app.PlotButtonExtrusion.Tag = 'ExtrusionPlot';
-
-            % Create ExportButtonExtrusion
-            app.ExportButtonExtrusion = uibutton(app.ElutionExtrusionTab, 'ButtonPushedFcn',@(src,event) CUPPrediction(app));
-            app.ExportButtonExtrusion.Position = [372 445 68 23];
-            app.ExportButtonExtrusion.Text = 'Export';
-            app.ExportButtonExtrusion.Tag = 'ExtrusionExport';
 
             % Create CCC/CPC Switch
             app.CCCCPCSwitch = uiswitch(app.ElutionExtrusionTab, 'slider', 'ValueChangedFcn',@(src,event) CUPPrediction(app)); %TODO: Write new function?
@@ -1532,6 +1535,18 @@ classdef AppV1 < matlab.apps.AppBase
                 'Value', 0,...
                 'Position', [240 450 60 15]);
 
+            % Create PlotButton_3
+            app.PlotButtonExtrusion = uibutton(app.ElutionExtrusionTab, 'ButtonPushedFcn',@(src,event) CUPPrediction(app));
+            app.PlotButtonExtrusion.Position = [297 445 68 23];
+            app.PlotButtonExtrusion.Text = 'Plot';
+            app.PlotButtonExtrusion.Tag = 'ExtrusionPlot';
+
+            % Create ExportButtonExtrusion
+            app.ExportButtonExtrusion = uibutton(app.ElutionExtrusionTab, 'ButtonPushedFcn',@(src,event) CUPPrediction(app));
+            app.ExportButtonExtrusion.Position = [372 445 68 23];
+            app.ExportButtonExtrusion.Text = 'Export';
+            app.ExportButtonExtrusion.Tag = 'ExtrusionExport';
+
             %Create ExtrusionPeaksCheckbox
             app.ExtrusionPeaksCheckbox = uicheckbox(app.ElutionExtrusionTab,...
                 'Text', 'Peak Labels?',...
@@ -1550,17 +1565,34 @@ classdef AppV1 < matlab.apps.AppBase
                 'Value', 1,...
                 'Position', [620 450 102 15]);
 
+            % Create UIAxesExtrusion
+            app.UIAxesExtrusion = uiaxes(app.ElutionExtrusionTab);
+            xlabel(app.UIAxesExtrusion, 'Elution Time')
+            ylabel(app.UIAxesExtrusion, 'Concentration')
+            zlabel(app.UIAxesExtrusion, 'Z')
+            app.UIAxesExtrusion.Position = [8 10 695 430];
+
+
             % Create dualModeTab
             app.dualModeTab = uitab(app.TabGroup);
             app.dualModeTab.Title = 'Dual Mode';
             app.dualModeTab.Tag = 'DualPlot';
 
-            % Create UIAxesDual
-            app.UIAxesDual = uiaxes(app.dualModeTab);
-            xlabel(app.UIAxesDual, 'Elution Time')
-            ylabel(app.UIAxesDual, 'Concentration')
-            zlabel(app.UIAxesDual, 'Z')
-            app.UIAxesDual.Position = [8 10 695 430];
+            % Create DualDurationLabel
+            app.DualDurationLabel = uilabel(app.dualModeTab);
+            app.DualDurationLabel.HorizontalAlignment = 'right';
+            app.DualDurationLabel.Position = [40 445 120 22];
+            app.DualDurationLabel.Text = 'Dual Mode Duration';
+
+            % Create DualDuration
+            app.DualDuration = uieditfield(app.dualModeTab, 'numeric');
+            app.DualDuration.Position = [180 445 29 22];
+
+            % Create DualDurationLabelUnits
+            app.DualDurationLabelUnits = uilabel(app.dualModeTab);
+            app.DualDurationLabelUnits.HorizontalAlignment = 'center';
+            app.DualDurationLabelUnits.Position = [207 445 29 22];
+            app.DualDurationLabelUnits.Text = 'min';
 
             %Create dualModelSumCheckbox
             app.dualModelSumCheckbox = uicheckbox(app.dualModeTab,...
@@ -1580,22 +1612,6 @@ classdef AppV1 < matlab.apps.AppBase
             app.ExportButtonDual.Text = 'Export';
             app.ExportButtonDual.Tag = 'DualExport';
 
-            % Create DualDurationLabel
-            app.DualDurationLabel = uilabel(app.dualModeTab);
-            app.DualDurationLabel.HorizontalAlignment = 'right';
-            app.DualDurationLabel.Position = [40 445 120 22];
-            app.DualDurationLabel.Text = 'Dual Mode Duration';
-
-            % Create DualDuration
-            app.DualDuration = uieditfield(app.dualModeTab, 'numeric');
-            app.DualDuration.Position = [180 445 29 22];
-
-            % Create DualDurationLabelUnits
-            app.DualDurationLabelUnits = uilabel(app.dualModeTab);
-            app.DualDurationLabelUnits.HorizontalAlignment = 'center';
-            app.DualDurationLabelUnits.Position = [207 445 29 22];
-            app.DualDurationLabelUnits.Text = 'min';
-
             %Create DualPeaksCheckbox
             app.DualPeaksCheckbox = uicheckbox(app.dualModeTab,...
                 'Text', 'Peak Labels?',...
@@ -1614,24 +1630,18 @@ classdef AppV1 < matlab.apps.AppBase
                 'Value', 1,...
                 'Position', [620 450 102 15]);
 
+            % Create UIAxesDual
+            app.UIAxesDual = uiaxes(app.dualModeTab);
+            xlabel(app.UIAxesDual, 'Elution Time')
+            ylabel(app.UIAxesDual, 'Concentration')
+            zlabel(app.UIAxesDual, 'Z')
+            app.UIAxesDual.Position = [8 10 695 430];
+
+
             % Create MultipleDualModeTab
             app.MultipleDualModeTab = uitab(app.TabGroup);
             app.MultipleDualModeTab.Title = 'Multiple Dual Mode';
             app.MultipleDualModeTab.Tag = 'MultiPlot';
-
-            % Create UIAxesMulti
-            app.UIAxesMulti = uiaxes(app.MultipleDualModeTab);
-            xlabel(app.UIAxesMulti, 'Elution Time')
-            ylabel(app.UIAxesMulti, 'Concentration')
-            zlabel(app.UIAxesMulti, 'Z')
-            app.UIAxesMulti.Position = [8 230 695 210];
-
-            % Create UIAxesMultiPosition
-            app.UIAxesMultiPosition = uiaxes(app.MultipleDualModeTab);
-            xlabel(app.UIAxesMultiPosition, 'Elution Time')
-            ylabel(app.UIAxesMultiPosition, 'Column Position')
-            zlabel(app.UIAxesMultiPosition, 'Z')
-            app.UIAxesMultiPosition.Position = [200 10 495 215];
 
             %Create multiModelSumCheckbox
             app.multiModelSumCheckbox = uicheckbox(app.MultipleDualModeTab,...
@@ -1651,6 +1661,31 @@ classdef AppV1 < matlab.apps.AppBase
             app.ExportButtonMulti.Text = 'Export';
             app.ExportButtonMulti.Tag = 'MultiExport';
 
+            %Create MultiPeaksCheckbox
+            app.MultiPeaksCheckbox = uicheckbox(app.MultipleDualModeTab,...
+                'Text', 'Peak Labels?',...
+                'Value', 1,...
+                'Position', [460 450 102 15]);
+
+            %Create MultiLinesCheckbox
+            app.MultiLinesCheckbox = uicheckbox(app.MultipleDualModeTab,...
+                'Text', 'Lines?',...
+                'Value', 1,...
+                'Position', [560 450 102 15]);
+
+            %Create MultiLinesLabelsCheckbox
+            app.MultiLinesLabelsCheckbox = uicheckbox(app.MultipleDualModeTab,...
+                'Text', 'Labels?',...
+                'Value', 1,...
+                'Position', [620 450 102 15]);
+
+            % Create UIAxesMulti
+            app.UIAxesMulti = uiaxes(app.MultipleDualModeTab);
+            xlabel(app.UIAxesMulti, 'Elution Time')
+            ylabel(app.UIAxesMulti, 'Concentration')
+            zlabel(app.UIAxesMulti, 'Z')
+            app.UIAxesMulti.Position = [8 230 695 210];
+
             % Create SwitchTimeLabel
             app.SwitchTimeListLabel = uilabel(app.MultipleDualModeTab);
             app.SwitchTimeListLabel.HorizontalAlignment = 'center';
@@ -1658,19 +1693,6 @@ classdef AppV1 < matlab.apps.AppBase
             app.SwitchTimeListLabel.FontWeight = 'bold';
             app.SwitchTimeListLabel.Position = [48 210 137 24];
             app.SwitchTimeListLabel.Text = 'Switch Times';
-
-            % Create UITable
-            initialRows = {'Cycle 1' 10; 'Cycle 2' 5};
-            app.SwitchTimeList = uitable(app.MultipleDualModeTab, ...
-                "ColumnName",{'Iteration'; 'min'}, ...
-                "ColumnFormat",{'char' []}, ...
-                "ColumnWidth",{75 73}, ...
-                "Data",initialRows);
-            app.SwitchTimeList.RowName = {};
-            addStyle(app.SwitchTimeList, tableStyle);
-            app.SwitchTimeList.ColumnSortable = true;
-            app.SwitchTimeList.ColumnEditable = true;
-            app.SwitchTimeList.Position = [42 20 150 180];
 
             % Create addCycle
             app.addCycle = uibutton(app.MultipleDualModeTab,'ButtonPushedFcn',@(src,event) addCycleButtonPushed(app));
@@ -1692,23 +1714,26 @@ classdef AppV1 < matlab.apps.AppBase
             app.openSwitchTimes.Position = [11 29 25 25];
             app.openSwitchTimes.Text = 'O';
 
-            %Create MultiPeaksCheckbox
-            app.MultiPeaksCheckbox = uicheckbox(app.MultipleDualModeTab,...
-                'Text', 'Peak Labels?',...
-                'Value', 1,...
-                'Position', [460 450 102 15]);
+            % Create UITable
+            initialRows = {'Cycle 1' 10; 'Cycle 2' 5};
+            app.SwitchTimeList = uitable(app.MultipleDualModeTab, ...
+                "ColumnName",{'Iteration'; 'min'}, ...
+                "ColumnFormat",{'char' []}, ...
+                "ColumnWidth",{75 73}, ...
+                "Data",initialRows);
+            app.SwitchTimeList.RowName = {};
+            addStyle(app.SwitchTimeList, tableStyle);
+            app.SwitchTimeList.ColumnSortable = true;
+            app.SwitchTimeList.ColumnEditable = true;
+            app.SwitchTimeList.Position = [42 20 150 180];
 
-            %Create MultiLinesCheckbox
-            app.MultiLinesCheckbox = uicheckbox(app.MultipleDualModeTab,...
-                'Text', 'Lines?',...
-                'Value', 1,...
-                'Position', [560 450 102 15]);
+            % Create UIAxesMultiPosition
+            app.UIAxesMultiPosition = uiaxes(app.MultipleDualModeTab);
+            xlabel(app.UIAxesMultiPosition, 'Elution Time')
+            ylabel(app.UIAxesMultiPosition, 'Column Position')
+            zlabel(app.UIAxesMultiPosition, 'Z')
+            app.UIAxesMultiPosition.Position = [200 10 495 215];
 
-            %Create MultiLinesLabelsCheckbox
-            app.MultiLinesLabelsCheckbox = uicheckbox(app.MultipleDualModeTab,...
-                'Text', 'Labels?',...
-                'Value', 1,...
-                'Position', [620 450 102 15]);
 
             % Create PulseTab
             app.PulseTab = uitab(app.TabGroup);
@@ -1720,37 +1745,6 @@ classdef AppV1 < matlab.apps.AppBase
             app.ImportPulseTraceButton.Position = [40 445 68 23];
             app.ImportPulseTraceButton.Text = 'Import';
             app.ImportPulseTraceButton.Tag = 'ImportPulse';
-
-            % Create UIAxesPulse
-            app.UIAxesPulse = uiaxes(app.PulseTab);
-            xlabel(app.UIAxesPulse, 'Elution Time')
-            ylabel(app.UIAxesPulse, 'Concentration')
-            zlabel(app.UIAxesPulse, 'Z')
-            app.UIAxesPulse.Position = [8 10 450 430];
-
-            % Create FindPulsePeaksButton
-            app.FindPulsePeaksButton = uibutton(app.PulseTab, 'ButtonPushedFcn',@(src,event) findAndLabelPulsePeaks(app));
-            app.FindPulsePeaksButton.Position = [415 445 68 23];
-            app.FindPulsePeaksButton.Text = 'Find Peaks';
-            app.FindPulsePeaksButton.Tag = 'FindPulse';
-
-            % Create AddPulseNValue
-            app.AddPulseNValue = uibutton(app.PulseTab, 'ButtonPushedFcn',@(src,event) addNValue(app));
-            app.AddPulseNValue.Position = [490 445 68 23];
-            app.AddPulseNValue.Text = 'Add N';
-            app.AddPulseNValue.Tag = 'AddN';
-
-            % Create SavePulseList
-            app.SavePulseList = uibutton(app.PulseTab, 'ButtonPushedFcn',@(src,event) savePulseList(app));
-            app.SavePulseList.Position = [606 445 40 23];
-            app.SavePulseList.Text = 'Save';
-            app.SavePulseList.Tag = 'saveN';
-
-            % Create OpenPulseList
-            app.OpenPulseList = uibutton(app.PulseTab, 'ButtonPushedFcn',@(src,event) openPulseList(app));
-            app.OpenPulseList.Position = [653 445 40 23];
-            app.OpenPulseList.Text = 'Open';
-            app.OpenPulseList.Tag = 'OpenN';
 
             % Create PulseSpanLabel
             app.PulseSpanLabel = uilabel(app.PulseTab);
@@ -1786,6 +1780,38 @@ classdef AppV1 < matlab.apps.AppBase
             app.PulseBaseline = uieditfield(app.PulseTab, 'numeric');
             app.PulseBaseline.Position = [367 445 29 22];
             app.PulseBaseline.Value = 5;
+
+            % Create FindPulsePeaksButton
+            app.FindPulsePeaksButton = uibutton(app.PulseTab, 'ButtonPushedFcn',@(src,event) findAndLabelPulsePeaks(app));
+            app.FindPulsePeaksButton.Position = [415 445 68 23];
+            app.FindPulsePeaksButton.Text = 'Find Peaks';
+            app.FindPulsePeaksButton.Tag = 'FindPulse';
+
+            % Create AddPulseNValue
+            app.AddPulseNValue = uibutton(app.PulseTab, 'ButtonPushedFcn',@(src,event) addNValue(app));
+            app.AddPulseNValue.Position = [490 445 68 23];
+            app.AddPulseNValue.Text = 'Add N';
+            app.AddPulseNValue.Tag = 'AddN';
+
+            % Create SavePulseList
+            app.SavePulseList = uibutton(app.PulseTab, 'ButtonPushedFcn',@(src,event) savePulseList(app));
+            app.SavePulseList.Position = [606 445 40 23];
+            app.SavePulseList.Text = 'Save';
+            app.SavePulseList.Tag = 'saveN';
+
+            % Create OpenPulseList
+            app.OpenPulseList = uibutton(app.PulseTab, 'ButtonPushedFcn',@(src,event) openPulseList(app));
+            app.OpenPulseList.Position = [653 445 40 23];
+            app.OpenPulseList.Text = 'Open';
+            app.OpenPulseList.Tag = 'OpenN';
+
+            % Create UIAxesPulse
+            app.UIAxesPulse = uiaxes(app.PulseTab);
+            xlabel(app.UIAxesPulse, 'Elution Time')
+            ylabel(app.UIAxesPulse, 'Concentration')
+            zlabel(app.UIAxesPulse, 'Z')
+            app.UIAxesPulse.Position = [8 10 450 430];
+
 
             % Create PulseNTableListLabel
             app.PulseNTableListLabel = uilabel(app.PulseTab);
@@ -1878,17 +1904,11 @@ classdef AppV1 < matlab.apps.AppBase
             app.labelSfB.Position = [550 55 150 24];
             app.labelSfB.Text = 'B: ';
 
+
             % Create FittingTab
             app.FitTab = uitab(app.TabGroup);
             app.FitTab.Title = 'Trace Fitting';
             app.FitTab.Tag = 'Fit';
-
-            % Create UIAxesFit
-            app.UIAxesFit = uiaxes(app.FitTab);
-            xlabel(app.UIAxesFit, 'Elution Time')
-            ylabel(app.UIAxesFit, 'Concentration')
-            zlabel(app.UIAxesFit, 'Z')
-            app.UIAxesFit.Position = [8 10 695 430];
             
             % Create ImportTraceButton
             app.ImportTraceButton = uibutton(app.FitTab, 'ButtonPushedFcn',@(src,event) importTrace(app));
@@ -1949,21 +1969,13 @@ classdef AppV1 < matlab.apps.AppBase
                 'Value', 0,...
                 'Position', [570 449 130 15]);
             set(app.DisplayWithModeling, 'Tooltip', 'Currently only displays on Classic or Elution-Extrusion models.')
-            
-            app.AscDescLabel = uilabel(app.UIFigure);
-            app.AscDescLabel.HorizontalAlignment = 'center';
-            app.AscDescLabel.FontSize = 12;
-            app.AscDescLabel.Position = [665 190 50 30];
-            app.AscDescLabel.Text = 'Mobile Phase';
-            app.AscDescLabel.WordWrap = 'on';
 
-            % Create Switch
-            app.AscDesc = uiswitch(app.UIFigure, 'slider', 'ValueChangedFcn',@(src,event) CUPPrediction(app));
-            app.AscDesc.Items = {'Lower', 'Upper'};
-            app.AscDesc.Position = [680 120 45 20];
-            app.AscDesc.Orientation = 'vertical';
-            app.AscDesc.Value = 'Lower';
-            app.AscDesc.Tag = 'Switch';
+            % Create UIAxesFit
+            app.UIAxesFit = uiaxes(app.FitTab);
+            xlabel(app.UIAxesFit, 'Elution Time')
+            ylabel(app.UIAxesFit, 'Concentration')
+            zlabel(app.UIAxesFit, 'Z')
+            app.UIAxesFit.Position = [8 10 695 430];
             
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
