@@ -1,0 +1,1 @@
+These are the raw .m files for the CUP Modeler. Opening AppV1.m in MATLAB will enable you to run the program, just make sure the rest of the functions are in the same folder as the program relies on them.
