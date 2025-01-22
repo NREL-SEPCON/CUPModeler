@@ -509,8 +509,9 @@ classdef AppV1 < matlab.apps.AppBase
         end
 
         function openCompounds(app)
-            [filename] = uigetfile('.xls');
-            importedTable = array2table(readcell(filename));
+            [filename,location] = uigetfile('.xls');
+            file = strcat(location,filename)
+            importedTable = array2table(readcell(file));
             app.compoundList.Data = table2cell(importedTable);
         end
 
@@ -538,8 +539,9 @@ classdef AppV1 < matlab.apps.AppBase
         end
 
         function openSwitchTimeList(app)
-            [filename] = uigetfile('.xls');
-            importedTable = array2table(readcell(filename));
+            [filename,location] = uigetfile('.xls');
+            file = strcat(location,filename)
+            importedTable = array2table(readcell(file));
             app.SwitchTimeList.Data = table2cell(importedTable);
         end
 
@@ -554,8 +556,9 @@ classdef AppV1 < matlab.apps.AppBase
         end
 
         function openPulseList(app)
-            [filename] = uigetfile('.xls');
-            app.PulseNList.Data = cell2mat(readcell(filename));
+            [filename, location] = uigetfile('.xls');
+            file = strcat(location,filename)
+            app.PulseNList.Data = cell2mat(readcell(file));
             app.fitCoefficients();
         end
 
