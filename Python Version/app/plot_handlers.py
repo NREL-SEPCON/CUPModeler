@@ -1576,7 +1576,8 @@ class PlotHandlersMixin:
                     self.fit_ax.set_ylabel('Concentration')
                     self.fit_ax.grid(True, linestyle='--', alpha=0.7)
                     self.fit_canvas.draw()
-                    self.fit_span_entry.set(min(20, len(Y)//2))
+                    self.fit_span_entry.delete(0, tk.END)  # Clear existing content
+                    self.fit_span_entry.insert(0, str(min(20, len(Y)//2)))  # Insert new value
 
                 elif trace_type == 'pulse':
                     self.pulse_data = {'X': X, 'Y': Y}
@@ -1740,7 +1741,7 @@ class PlotHandlersMixin:
                 Y_smooth = np.convolve(Y, np.ones(window_size)/window_size, mode='same')
 
             # Find peaks with specified prominence
-            prominence_value = float(self.pulse_prominence_var.get())
+            prominence_value = float(self.pulse_prominence_entry.get())
 
             # Ensure we have valid data for peak finding
             if np.max(Y_smooth) <= prominence_value:
@@ -1850,7 +1851,7 @@ class PlotHandlersMixin:
             Y = self.fit_data['Y']
 
             # Apply Savitzky-Golay filter to smooth data
-            window_length = self.fit_span_entry.get()
+            window_length = int(self.fit_span_entry.get())
             if window_length % 2 == 0:
                 window_length += 1  # Must be odd
             Y_smooth = savgol_filter(Y, window_length, 3)
@@ -1862,7 +1863,7 @@ class PlotHandlersMixin:
 
             # Find peaks with specified prominence
 
-            peaks, properties = find_peaks(Y_adjusted, prominence=self.fit_prominence_entry.get())
+            peaks, properties = find_peaks(Y_adjusted, prominence=float(self.fit_prominence_entry.get()))
 
             # Calculate KD values
             sf = float(self.stationary_phase_single_entry.get())
