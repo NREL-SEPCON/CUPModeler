@@ -79,9 +79,6 @@ class StateManagementMixin:
             self.injection_volume_entry.delete(0, tk.END)
             self.injection_volume_entry.insert(0, "1")
 
-            self.dead_volume_entry.delete(0, tk.END)
-            self.dead_volume_entry.insert(0, "0")
-
             # Reset stationary phase and efficiency to defaults
             self.stationary_phase_var.set("Set Sf")
             self.toggle_stationary()
@@ -325,7 +322,6 @@ class StateManagementMixin:
             "column_volume": self.column_volume_entry.get(),
             "elution_duration": self.elution_duration_entry.get(),
             "injection_volume": self.injection_volume_entry.get(),
-            "dead_volume": self.dead_volume_entry.get(),
 
             # Duration entries for other tabs
             "extrusion_duration": getattr(self, 'extrusion_duration_entry', None) and self.extrusion_duration_entry.get(),
@@ -345,7 +341,6 @@ class StateManagementMixin:
             "n_coefficient_c": getattr(self, 'n_coefficient_c_entry', None) and self.n_coefficient_c_entry.get(),
 
             # Checkboxes and options
-            "include_injection": self.include_injection_var.get(),
             "mobile_phase": self.mobile_phase_var.get(),
             "volume_time_mode": self.volume_time_var.get(),
             "ccc_cpc_mode": getattr(self, 'ccc_cpc_var', None) and self.ccc_cpc_var.get(),
@@ -681,9 +676,6 @@ class StateManagementMixin:
         self.injection_volume_entry.delete(0, tk.END)
         self.injection_volume_entry.insert(0, gui_state.get('injection_volume', '1'))
 
-        self.dead_volume_entry.delete(0, tk.END)
-        self.dead_volume_entry.insert(0, gui_state.get('dead_volume', '0'))
-
         # Duration entries for other tabs
         if hasattr(self, 'extrusion_duration_entry') and gui_state.get('extrusion_duration'):
             self.extrusion_duration_entry.delete(0, tk.END)
@@ -728,7 +720,6 @@ class StateManagementMixin:
             self.n_coefficient_c_entry.insert(0, gui_state['n_coefficient_c'])
 
         # Checkboxes and variables
-        self.include_injection_var.set(gui_state.get('include_injection', True))
         self.mobile_phase_var.set(gui_state.get('mobile_phase', 'Lower'))
         self.volume_time_var.set(gui_state.get('volume_time_mode', 'Time'))
 
@@ -1088,12 +1079,12 @@ class StateManagementMixin:
             vspan = results['vspan']
             cout = results['cout']
 
-            # Add dead volume and convert to time if needed
-            x_values = vspan + parameters.get_effective_dead_volume()
+            # Convert to time if needed
             if parameters.volume_time_mode.value == "Time":
-                x_values = x_values / parameters.flow_rate
+                x_values = vspan / parameters.flow_rate
                 x_label = 'Time (min)'
             else:
+                x_values = vspan
                 x_label = 'Volume (mL)'
 
             # Prepare main data
@@ -1124,9 +1115,7 @@ class StateManagementMixin:
                     'Column Efficiency (N)',
                     'Elution Duration (min)',
                     'Elution Volume (mL)',
-                    'Dead Volume (mL)',
                     'Injection Volume (mL)',
-                    'Include Injection Volume',
                     'Volume/Time Mode'
                 ],
                 'Value': [
@@ -1137,9 +1126,7 @@ class StateManagementMixin:
                     f"{parameters.get_effective_n():.0f}",
                     f"{parameters.elution_duration:.2f}",
                     f"{parameters.get_vcm():.2f}",
-                    f"{parameters.get_effective_dead_volume():.2f}",
                     f"{parameters.injection_volume:.2f}",
-                    'Yes' if parameters.include_injection else 'No',
                     parameters.volume_time_mode.value
                 ]
             }

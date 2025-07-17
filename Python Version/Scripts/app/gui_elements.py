@@ -216,36 +216,6 @@ class GUIElementsMixin:
         self.n_coefficient_c_entry.pack(side="left")
         self.n_coefficient_c_entry.insert(0, "0.1480")
 
-        # Row 6 - Dead Volume and Options
-        row = 5
-        ttk.Label(self.column_properties_frame, text="Column\nDead\nVolume").grid(row=row, column=0, sticky="w", padx=(0, 5), pady=(10, 0))
-        self.dead_volume_entry = self.create_validated_entry(self.column_properties_frame,
-                                                             validation_params={'allow_zero': True, 'default_value': 0, 'min_val': 0},
-                                                             width=5
-                                                             )
-        self.dead_volume_entry.grid(row=row, column=1, sticky="w", padx=(0, 0), pady=(10, 0))
-        self.dead_volume_entry.insert(0, "0")
-        ttk.Label(self.column_properties_frame, text="mL").grid(row=row, column=2, sticky="w", padx=(0, 15), pady=(10, 0))
-
-        self.include_injection_var = tk.BooleanVar(value=True)
-        self.include_injection_checkbox = ttk.Checkbutton(
-            self.column_properties_frame,
-            text="Include\nInj. Vol.?",
-            variable=self.include_injection_var
-        )
-        self.include_injection_checkbox.grid(row=row, column=2, padx=(0, 5), pady=(10, 0), columnspan=2)
-
-        ttk.Label(self.column_properties_frame, text="X-Axis").grid(row=row, column=4, padx=(0, 0), pady=(10, 0))
-        self.volume_time_var = tk.StringVar(value="Time")
-        self.volume_time_switch = ttk.Combobox(self.column_properties_frame,
-                                               textvariable=self.volume_time_var,
-                                               values=["Time", "Volume"],
-                                               width=5,
-                                               state="readonly"
-                                               )
-        self.volume_time_switch.grid(row=row, column=5, sticky="w", padx=(0, 0), pady=(10, 0))
-        self.volume_time_switch.bind("<<ComboboxSelected>>", self.toggle_volume_time)
-
         # Initially hide coefficient fields
         self.hide_sf_coefficients()
         self.hide_n_coefficients()
@@ -307,19 +277,30 @@ class GUIElementsMixin:
         button_frame.grid(row=1, column=0, sticky="ew")
 
         # Buttons
-        ttk.Button(button_frame, text="+", width=3, command=self.add_compound).grid(row=0, column=0, padx=(0, 0))
-        ttk.Button(button_frame, text="-", width=3, command=self.remove_compound).grid(row=0, column=1, padx=(0, 40))
-        ttk.Button(button_frame, text="Save", width=6, command=self.save_compounds).grid(row=0, column=2, padx=(0, 0))
-        ttk.Button(button_frame, text="Open", width=6, command=self.open_compounds).grid(row=0, column=3, padx=(0, 30))
+        ttk.Button(button_frame, text="+", width=2, command=self.add_compound).grid(row=0, column=0, padx=(0, 0))
+        ttk.Button(button_frame, text="-", width=2, command=self.remove_compound).grid(row=0, column=1, padx=(0, 10))
+        ttk.Button(button_frame, text="Save", width=5, command=self.save_compounds).grid(row=0, column=2, padx=(0, 0))
+        ttk.Button(button_frame, text="Open", width=5, command=self.open_compounds).grid(row=0, column=3, padx=(0, 10))
 
-        ttk.Label(button_frame, text="Mobile Phase").grid(row=0, column=4, sticky="w", padx=(0, 0))
+        ttk.Label(button_frame, text="Mobile\nPhase").grid(row=0, column=4, sticky="w", padx=(0, 0))
         self.mobile_phase_var = tk.StringVar(value="Lower")
         self.mobile_phase_switch = ttk.Combobox(button_frame,
                                                 textvariable=self.mobile_phase_var,
                                                 values=["Lower", "Upper"],
                                                 width=5,
                                                 state="readonly")
-        self.mobile_phase_switch.grid(row=0, column=5, sticky="w", padx=(0, 0))
+        self.mobile_phase_switch.grid(row=0, column=5, sticky="w", padx=(0, 10))
+
+        ttk.Label(button_frame, text="X-Axis").grid(row=0, column=6, padx=(0, 0), sticky="w")
+        self.volume_time_var = tk.StringVar(value="Time")
+        self.volume_time_switch = ttk.Combobox(button_frame,
+                                               textvariable=self.volume_time_var,
+                                               values=["Time", "Volume"],
+                                               width=5,
+                                               state="readonly"
+                                               )
+        self.volume_time_switch.grid(row=0, column=7, sticky="w", padx=(0, 0))
+        self.volume_time_switch.bind("<<ComboboxSelected>>", self.toggle_volume_time)
 
         # Bind double-click to edit table cells and delete/backspace keys to remove compounds
         self.compound_table.bind("<Double-1>", lambda e: self.start_inline_edit(e, 'compound'))

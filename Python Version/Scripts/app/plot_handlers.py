@@ -7,9 +7,9 @@ import tkinter as tk
 from enum import Enum
 from scipy.io import loadmat
 import matplotlib.pyplot as plt
-from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Any
 from tkinter import ttk, messagebox, filedialog
+from dataclasses import dataclass, field, replace
 from scipy.signal import find_peaks, savgol_filter
 
 from models.CupV6 import CupV6
@@ -38,10 +38,8 @@ class SimulationParameters:
     column_volume: float = 81.0
     elution_duration: float = 60.0
     injection_volume: float = 1.0
-    dead_volume: float = 0.0
     stationary_phase: float = 0.75
     column_efficiency: int = 400
-    include_injection: bool = True
     volume_time_mode: VolumeTimeMode = VolumeTimeMode.TIME
 
     # Coefficients (if using coefficient mode)
@@ -70,7 +68,7 @@ class SimulationParameters:
     def get_vcm(self) -> float:
         """Get elution volume in mL"""
         if self.volume_time_mode == VolumeTimeMode.TIME:
-            return self.flow_rate * self.elution_duration
+            return (self.flow_rate * self.elution_duration)
         return self.elution_duration
 
     def to_dict(self) -> Dict:
@@ -79,13 +77,6 @@ class SimulationParameters:
             field.name: getattr(self, field.name)
             for field in self.__dataclass_fields__.values()
         }
-
-    def get_effective_dead_volume(self) -> float:
-        """Get dead volume including injection volume if selected (matches MATLAB)"""
-        dead_vol = self.dead_volume
-        if self.include_injection:
-            dead_vol += self.injection_volume
-        return dead_vol
 
 
 @dataclass
@@ -170,7 +161,7 @@ class SimulationResults:
 
     def get_plot_data(self) -> tuple[np.ndarray, np.ndarray]:
         """Get data ready for plotting with unit conversion"""
-        x_values = self.vspan.copy() + self.parameters.get_effective_dead_volume()
+        x_values = self.vspan.copy()
 
         if self.parameters.volume_time_mode == VolumeTimeMode.TIME:
             x_values /= self.parameters.flow_rate
@@ -484,17 +475,13 @@ class PlotRenderer:
                 # Add switching lines with consistent styling
                 vswdm = np.array(results.metadata.get('vbc', []))
                 vswcm = np.array(results.metadata.get('vcyc', []))
-                dead_volume = results.parameters.get_effective_dead_volume()
-
-                vswdm_with_dead = vswdm + dead_volume
-                vswcm_with_dead = vswcm + dead_volume
 
                 if results.parameters.volume_time_mode == VolumeTimeMode.TIME:
-                    vswdm_times = vswdm_with_dead / results.parameters.flow_rate
-                    vswcm_times = vswcm_with_dead / results.parameters.flow_rate
+                    vswdm_times = vswdm / results.parameters.flow_rate
+                    vswcm_times = vswcm / results.parameters.flow_rate
                 else:
-                    vswdm_times = vswdm_with_dead
-                    vswcm_times = vswcm_with_dead
+                    vswdm_times = vswdm
+                    vswcm_times = vswcm
 
                 # Consistent line styling
                 if config.show_lines:
@@ -596,6 +583,7 @@ class PlotRenderer:
         """Add vertical lines specific to extrusion plots"""
 
         # Get timing data from metadata
+        params = results.parameters
         column_volume_extruded_time = results.metadata.get('column_volume_extruded_time')
         sweep_time = results.metadata.get('sweep_time')
         elution_time = results.metadata.get('elution_time')
@@ -654,46 +642,50 @@ class PlotRenderer:
                 elution_time = params.get_vcm() / params.flow_rate
             else:
                 elution_time = params.get_vcm()
-
-        # Add dead volume effect
-        dead_volume_time = params.dead_volume
-        if params.volume_time_mode == VolumeTimeMode.TIME:
-            dead_volume_time = params.dead_volume / params.flow_rate
-
-        dual_switch_time = elution_time + dead_volume_time
-
         # Draw the line
-        self.ax.axvline(x=dual_switch_time, color='r', linestyle='-.', label="Dual Switch")
+        self.ax.axvline(x=elution_time, color='r', linestyle='-.', label="Dual Switch")
 
         if config.show_line_labels:
             units = ' min' if params.volume_time_mode == VolumeTimeMode.TIME else ' mL'
-            dual_switch_label = f"Dual Switch\n{dual_switch_time:.2f}{units}"
+            dual_switch_label = f"Dual Switch\n{elution_time:.2f}{units}"
             _, y_max = self.ax.get_ylim()
             text_y_position = y_max * 0.95
-            self.ax.text(dual_switch_time, text_y_position,
+            self.ax.text(elution_time, text_y_position,
                          dual_switch_label, ha="right", va="top", rotation=90)
 
     def _add_multi_mode_lines(self, results: SimulationResults, config: PlotConfig, x_data, gui_context):
         """Add vertical lines for multiple dual mode switching"""
+        # Add switching lines with consistent styling
+        vswdm = np.array(results.metadata.get('vbc', []))
+        vswcm = np.array(results.metadata.get('vcyc', []))
+
+        if results.parameters.volume_time_mode == VolumeTimeMode.TIME:
+            vswdm_times = vswdm / results.parameters.flow_rate
+            vswcm_times = vswcm / results.parameters.flow_rate
+        else:
+            vswdm_times = vswdm
+            vswcm_times = vswcm
+
+        # Consistent line styling
+        if config.show_lines:
+            for v in vswdm_times:
+                gui_context.multi_pos_ax.axvline(x=v, color='red', linestyle='-.', linewidth=1.0, alpha=0.8)
+            for v in vswcm_times:
+                gui_context.multi_pos_ax.axvline(x=v, color='blue', linestyle='-.', linewidth=1.0, alpha=0.8)
 
         # Get switching data from metadata
         vswdm = results.metadata.get('vbc', np.array([]))  # VswDM
         vswcm = results.metadata.get('vcyc', np.array([]))  # VswCM
 
         params = results.parameters
-        dead_volume = params.dead_volume
-
-        # Add dead volume to switching times
-        vswdm_with_dead = vswdm + dead_volume
-        vswcm_with_dead = vswcm + dead_volume
 
         if params.volume_time_mode == VolumeTimeMode.TIME:
-            vswdm_times = vswdm_with_dead / params.flow_rate
-            vswcm_times = vswcm_with_dead / params.flow_rate
+            vswdm_times = vswdm / params.flow_rate
+            vswcm_times = vswcm / params.flow_rate
             units = ' min'
         else:
-            vswdm_times = vswdm_with_dead
-            vswcm_times = vswcm_with_dead
+            vswdm_times = vswdm
+            vswcm_times = vswcm
             units = ' mL'
 
         # Get y-axis limits for positioning text at top
@@ -848,7 +840,7 @@ class SimulationService:
             params.get_effective_n(),
             params.get_vcm(),
             conc_array,
-            params.injection_volume if params.include_injection else 0
+            params.injection_volume
         )
 
         return SimulationResults(
@@ -869,18 +861,20 @@ class SimulationService:
 
     def _run_extrusion(self, params: SimulationParameters, compounds, kd_array, conc_array, extra_params: Dict):
         """Run elution-extrusion simulation"""
-
         # Extract parameters
         elution_duration = extra_params.get('elution_duration')
         extrusion_duration = extra_params.get('extrusion_duration')
         ccc_cpc_mode = extra_params.get('ccc_cpc_mode')
+
+        effective_elution_duration = elution_duration
+
+        classic_params = replace(params, elution_duration=effective_elution_duration)
+
         flow_rate = params.flow_rate
         n_cups = params.get_effective_n()
 
         # Run classic simulation with correct elution duration
-        from dataclasses import replace
-        modified_params = replace(params, elution_duration=elution_duration)
-        classic_results = self._run_classic(modified_params, compounds, kd_array, conc_array)
+        classic_results = self._run_classic(classic_params, compounds, kd_array, conc_array)
         x_classic = classic_results.metadata.get('x')
         y_classic = classic_results.metadata.get('y')
 
@@ -897,7 +891,7 @@ class SimulationService:
             # CCC: Calculate sweep phase and actual extrusion
             mobile_phase_volume = params.column_volume * (1 - params.get_effective_sf())
             sweep_duration = mobile_phase_volume / flow_rate
-            
+
             # Determine actual extrusion needed after sweep
             if params.volume_time_mode == VolumeTimeMode.TIME:
                 actual_extrusion_duration = max(0, extrusion_duration - sweep_duration)
@@ -946,21 +940,25 @@ class SimulationService:
                 'xtot': xtot,
                 'ytot': ytot,
                 'vbc': vbc,
-                'vcm': modified_params.get_vcm(),
+                'vcm': classic_params.get_vcm(),
                 'column_volume_extruded_time': column_volume_extruded_time,
                 'sweep_time': sweep_time,
                 'elution_time': elution_duration,
                 'ccc_cpc_mode': ccc_cpc_mode,
                 'volume_time_mode': params.volume_time_mode,
-                'elution_duration': elution_duration,
+                'elution_duration': effective_elution_duration,
                 'extrusion_duration': extrusion_duration
             }
         )
 
     def _run_dual(self, params: SimulationParameters, compounds: List[CompoundData], kd_array, conc_array, extra_params: Dict):
         """Run dual mode simulation"""
+        effective_elution_duration = params.elution_duration
+
+        classic_params = replace(params, elution_duration=effective_elution_duration)
+
         # First run classic simulation to get initial conditions
-        classic_results = self._run_classic(params, compounds, kd_array, conc_array)
+        classic_results = self._run_classic(classic_params, compounds, kd_array, conc_array)
         x_classic = classic_results.metadata.get('x')
         y_classic = classic_results.metadata.get('y')
 
@@ -1011,8 +1009,11 @@ class SimulationService:
         else:
             switch_volumes = switch_times
 
+        # Adjust the main elution volume based on injection volume inclusion
+        main_elution_volume = params.get_vcm()
+
         # Combine the main elution volume (vcm) with the switch volumes
-        vcm_array = np.concatenate(([params.get_vcm()], switch_volumes))
+        vcm_array = np.concatenate(([main_elution_volume], switch_volumes))
 
         # Run multiple dual mode simulation - MDMV2 returns 7 values
         vtot, ctot, xtot, ytot, tcut, vswdm, vswcm = MDMV2(
@@ -1021,7 +1022,7 @@ class SimulationService:
             params.column_volume,
             params.get_effective_n(),
             conc_array,
-            params.injection_volume if params.include_injection else 0,
+            params.injection_volume,
             vcm_array
         )
 
@@ -1923,10 +1924,8 @@ class PlotHandlersMixin:
             column_volume=float(self.column_volume_entry.get()),
             elution_duration=float(self.elution_duration_entry.get()),
             injection_volume=float(self.injection_volume_entry.get()),
-            dead_volume=float(self.dead_volume_entry.get()),
             stationary_phase=float(self.stationary_phase_single_entry.get()),
             column_efficiency=int(float(self.column_efficiency_single_entry.get())),
-            include_injection=self.include_injection_var.get(),
             volume_time_mode=VolumeTimeMode(self.volume_time_var.get()),
             use_sf_coefficients=(self.stationary_phase_var.get() == "Coeff."),
             sf_coeff_a=float(self.sf_coefficient_a_entry.get()) if hasattr(self, 'sf_coefficient_a_entry') else 0.982,

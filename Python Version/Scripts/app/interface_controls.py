@@ -550,9 +550,6 @@ class InterfaceControlsMixin:
                     peak_index = np.argmax(cout[i])
                     peak_volume = vspan[peak_index]
 
-                    # Add dead volume
-                    peak_volume += parameters.get_effective_dead_volume()
-
                     # Convert to time if needed
                     if parameters.volume_time_mode.value == "Time":
                         peak_time = peak_volume / parameters.flow_rate
