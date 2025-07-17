@@ -51,7 +51,7 @@ jobs:
             main.py
         elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
           python -m PyInstaller --onedir --windowed --name="CUP Modeler" \
-            --icon="icon.ico" \
+            --icon="icon.icns" \
             --add-data="models:models" \
             --add-data="app:app" \
             --hidden-import=matplotlib.backends.backend_tkagg \
@@ -67,6 +67,7 @@ jobs:
             main.py
         else
           python -m PyInstaller --onedir --windowed --name="CUP Modeler" \
+            --icon="icon.ico" \
             --add-data="models:models" \
             --add-data="app:app" \
             --hidden-import=matplotlib.backends.backend_tkagg \
