@@ -623,10 +623,13 @@ class PlotRenderer:
                     self.ax.text(sweep_time, text_y_position,
                                  sweep_end_label, ha="right", va="top", rotation=90)
         else:  # CPC mode
+            # Get y-axis limits for positioning text at top
+            _, y_max = self.ax.get_ylim()
+            text_y_position = y_max * 0.95
             self.ax.axvline(x=column_volume_extruded_time, color='b',
                             linestyle='-.', label="Extrusion Start")
             if sweep_start_label:
-                self.ax.text(column_volume_extruded_time, 0,
+                self.ax.text(column_volume_extruded_time, text_y_position,
                              sweep_start_label, ha="right", va="top", rotation=90)
 
     def _add_dual_mode_lines(self, results: SimulationResults, config: PlotConfig, x_data, gui_context):

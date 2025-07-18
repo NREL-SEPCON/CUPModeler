@@ -123,7 +123,6 @@ class StateManagementMixin:
                 self.switch_times_table.insert("", "end", values=("Cycle 2", "5"))
 
             # Reset all checkboxes and dropdowns to defaults
-            self.include_injection_var.set(True)
             self.mobile_phase_var.set("Lower")
             self.volume_time_var.set("Time")
 
