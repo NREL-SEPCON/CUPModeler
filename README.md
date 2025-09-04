@@ -35,7 +35,7 @@ This project is licensed under the [MIT License](./LICENSE).
 Clone the repository:
 
 ```bash
-git clone https://github.com/<your-org-or-username>/<your-repo-name>.git
+git clone https://github.com/NREL-SEPCON/CUPModeler.git
 ```
 
 Either run the script with Python (>=3.9 recommended):
