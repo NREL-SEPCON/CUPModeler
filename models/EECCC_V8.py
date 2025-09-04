@@ -5,9 +5,6 @@ import numpy as np
 @jit(nopython=True, parallel=True)
 def EECCC_V8(KD, Vc, Sf, Xcm, Ycm, extrusion_steps=None):
     """
-    EECCC - Extrusion mode of CCC by replacing mobile phase with SP.
-    Converted from MATLAB to Python.
-
     Parameters:
     KD: Distribution coefficient ([Conc_SP]eq/[Conc_MP]eq)
     Vc: Total column volume

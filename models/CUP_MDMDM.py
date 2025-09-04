@@ -5,9 +5,6 @@ import numpy as np
 @jit(nopython=True, parallel=True)
 def CUP_MDMDM(Sf, KD, Vc, Xcup, Ycup, Tstep):
     """
-    Dual mode CCC by reversing the stationary phase while keeping the mobile phase.
-    This function calculates elution histories and concentration profiles for a given column.
-
     Inputs:
     Sf - Stationary factor (volume ratio of [V_SP]/[V_C])
     KD - Array of distribution coefficients ([Conc_SP]eq/[Conc_MP]eq)

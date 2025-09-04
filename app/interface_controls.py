@@ -37,7 +37,7 @@ class InterfaceControlsMixin:
             b = float(self.sf_coefficient_b_entry.get())
 
             sf = a + b * flow_rate
-            sf = max(0.1, min(0.9, sf))  # Keep within reasonable bounds
+            sf = max(0.1, min(0.95, sf))  # Keep within reasonable bounds
 
             # Temporarily enable the entry to update it
             self.stationary_phase_single_entry.config(state="normal")
@@ -126,7 +126,7 @@ class InterfaceControlsMixin:
             messagebox.showwarning("Invalid Flow Rate", "Please enter a valid flow rate before toggling units.")
             return
 
-        # Determine current mode from the UI label (more reliable than combobox)
+        # Determine current mode from the UI label
         current_label = self.elution_label.cget('text')
         was_volume_mode = "Volume" in current_label
 
@@ -145,7 +145,7 @@ class InterfaceControlsMixin:
         # Perform the conversion
         self.convert_all_values(was_volume_mode, will_be_volume_mode, flow_rate)
 
-        # Update UI labels AFTER conversion
+        # Update UI labels after conversion
         self.update_ui_labels()
 
         # Update all plots
@@ -227,7 +227,7 @@ class InterfaceControlsMixin:
         except ValueError as e:
             self.show_notification(f"Failed to convert elution: {e}", notif_type="error")
 
-        # Convert extrusion duration (if it exists)
+        # Convert extrusion duration
         if hasattr(self, 'extrusion_duration_entry'):
             try:
                 current_extrusion = float(self.extrusion_duration_entry.get())
@@ -243,7 +243,7 @@ class InterfaceControlsMixin:
         else:
             self.show_notification("No extrusion duration found", notif_type="error")
 
-        # Convert dual mode duration (if it exists)
+        # Convert dual mode duration
         if hasattr(self, 'dual_duration_entry'):
             try:
                 current_dual = float(self.dual_duration_entry.get())
@@ -271,7 +271,7 @@ class InterfaceControlsMixin:
             flow_rate
         )
 
-        # Convert extrusion duration/volume (if exists)
+        # Convert extrusion duration/volume
         if hasattr(self, 'extrusion_duration_entry'):
             self.convert_field(
                 self.extrusion_duration_entry,
@@ -281,7 +281,7 @@ class InterfaceControlsMixin:
                 flow_rate
             )
 
-        # Convert dual mode duration/volume (if exists)
+        # Convert dual mode duration/volume
         if hasattr(self, 'dual_duration_entry'):
             self.convert_field(
                 self.dual_duration_entry,
@@ -581,7 +581,7 @@ class InterfaceControlsMixin:
             table_widget=self.switch_times_table,
             unique_id=unique_id,  # Use unique_id instead of letting treeview assign
             values=new_cycle,
-            position=position  # Use actual position instead of 'end'
+            position=position
         )
 
         # Execute through undo manager
@@ -634,7 +634,7 @@ class InterfaceControlsMixin:
         deleted_count = 0
         for unique_id in selected_items:
             try:
-                # Get the current values and position BEFORE deletion
+                # Get the current values and position before deletion
                 values = list(self.switch_times_table.item(unique_id, 'values'))
                 children = list(self.switch_times_table.get_children())
                 position = children.index(unique_id)
@@ -945,7 +945,7 @@ class InterfaceControlsMixin:
         try:
             if save:
                 old_value = ""
-                # Get old value BEFORE validation
+                # Get old value before validation
                 if self.current_edit_item and self.current_edit_column is not None:
                     current_values = list(self.current_edit_table.item(self.current_edit_item, 'values'))
                     old_value = current_values[self.current_edit_column] if self.current_edit_column < len(current_values) else ""
@@ -1047,7 +1047,7 @@ class InterfaceControlsMixin:
         if not self.current_edit_table or not self.current_edit_item:
             return "break"
 
-        # SAVE CURRENT STATE before finishing edit
+        # Save current state before finishing edit
         table = self.current_edit_table
         current_item = self.current_edit_item
         current_column = self.current_edit_column
@@ -1062,7 +1062,7 @@ class InterfaceControlsMixin:
                     table.item(current_item, values=current_values)
         except Exception as e:
             self.show_notification(f"Error saving current cell: {e}", notif_type="error")
-        # Now finish the edit (this will clear the state)
+        # Finish the edit (this will clear the state)
         self.finish_inline_edit(save=False)  # Don't save again since we already did
 
         # Get all items in the table
@@ -1110,7 +1110,7 @@ class InterfaceControlsMixin:
             target_item = all_items[next_item_index]
 
             # Calculate the bounding box for the target cell
-            column_id = f"#{next_column + 1}"  # Tkinter columns start at #1
+            column_id = f"#{next_column + 1}"  # Tkinter columns start at 1
             bbox = table.bbox(target_item, column_id)
 
             if bbox:
@@ -1167,7 +1167,7 @@ class InterfaceControlsMixin:
             1: self.plot_extrusion,      # Elution-Extrusion
             2: self.plot_dual,           # Dual Mode
             3: self.plot_multi,          # Multiple Dual Mode
-            4: getattr(self, 'plot_pulse', lambda: self.show_notification("Pulse Test not implemented", notif_type="info")),     # Pulse Test
+            4: getattr(self, 'plot_pulse', lambda: self.show_notification("Pulse Test not implemented", notif_type="info")),    # Pulse Test
             5: getattr(self, 'plot_trace', lambda: self.show_notification("Trace Fitting not implemented", notif_type="info"))  # Trace Fitting
         }
 
@@ -1185,7 +1185,7 @@ class InterfaceControlsMixin:
         """Display about dialog"""
         about_window = tk.Toplevel(self.root)
         about_window.title("About CUP Modeler")
-        about_window.geometry("500x260")
+        about_window.geometry("500x320")
         about_window.resizable(False, False)
         about_window.transient(self.root)
         about_window.grab_set()
@@ -1193,8 +1193,8 @@ class InterfaceControlsMixin:
         # Center the window
         about_window.update_idletasks()
         x = (about_window.winfo_screenwidth() // 2) - (250)
-        y = (about_window.winfo_screenheight() // 2) - (130)
-        about_window.geometry(f"500x260+{x}+{y}")
+        y = (about_window.winfo_screenheight() // 2) - (160)
+        about_window.geometry(f"500x320+{x}+{y}")
 
         # Get the window's background color
         window_bg = about_window.cget('bg')
@@ -1212,27 +1212,48 @@ class InterfaceControlsMixin:
 
         # Version
         version_label = tk.Label(about_window, text="Version 1.0",
-                                 font=("Arial", 18),
+                                 font=("Arial", 14),
                                  bg=window_bg)
         version_label.pack()
 
-        # Citation info
-        citation_frame = ttk.Frame(about_window)
-        citation_frame.pack(pady=10)
+        # Create clickable GitHub link
+        github_link = tk.Label(about_window, text="Find updates here.",
+                              font=("Arial", 12), foreground="blue",
+                              cursor="hand2",
+                              bg=window_bg)
+        github_link.pack()
+        github_link.bind("<Button-1>", lambda e: webbrowser.open(
+            "https://github.com/NREL-SEPCON/CUPModeler/"))
 
-        citation_label = tk.Label(citation_frame, text="To learn more, ",
+        # Citation info
+        citation_frame_1 = ttk.Frame(about_window)
+        citation_frame_1.pack(pady=10)
+
+        citation_label = tk.Label(citation_frame_1, text="To learn more,",
                                   font=("Arial", 12),
                                   bg=window_bg)
         citation_label.pack(side="left")
 
-        # Create clickable link
-        link_label = tk.Label(citation_frame, text="check out our work.",
+        # Create clickable link for modeling framework paper
+        link_label_1 = tk.Label(citation_frame_1, text="check out our underlying modeling work.",
                               font=("Arial", 12), foreground="blue",
                               cursor="hand2",
                               bg=window_bg)
-        link_label.pack(side="left")
-        link_label.bind("<Button-1>", lambda e: webbrowser.open(
+        link_label_1.pack(side="left")
+        link_label_1.bind("<Button-1>", lambda e: webbrowser.open(
             "https://www.sciencedirect.com/science/article/pii/S1383586621020347"))
+        
+        citation_frame_2 = ttk.Frame(about_window)
+        citation_frame_2.pack(pady=10)
+
+        # Create clickable link for this program's release paper and MDM demonstration
+        link_label_2 = tk.Label(citation_frame_2, text="Read the paper where this program was released",
+                              font=("Arial", 12), foreground="blue",
+                              cursor="hand2",
+                              bg=window_bg)
+        link_label_2.pack(side="left")
+        link_label_2.bind("<Button-1>", lambda e: webbrowser.open(
+            "https://www.sciencedirect.com/science/article/pii/S0021967325006107"))
 
         # Credits
         credits_label = tk.Label(about_window,
@@ -1262,7 +1283,7 @@ class InterfaceControlsMixin:
 
         try:
             # Calculate N value from peak properties
-            peak_idx = self.pulse_peaks[0]  # This is now a Python int
+            peak_idx = self.pulse_peaks[0]
             time = float(self.pulse_X[peak_idx])
 
             # Calculate width at half maximum for the peak

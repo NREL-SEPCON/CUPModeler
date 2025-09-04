@@ -289,7 +289,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Move executable with proper verification
+# Move executable with verification
 echo ""
 echo "Moving executable to desktop..."
 MOVE_SUCCESS=0

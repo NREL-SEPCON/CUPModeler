@@ -5,8 +5,6 @@ import numpy as np
 @jit(nopython=True, parallel=True)
 def CUP_MDMCM(Sf, KD, Vc, Xcup, Ycup, Tstep):
     """
-    This function calculates elution histories and concentration profiles for a given column.
-
     Inputs:
     Sf - Stationary factor (volume ratio of [V_SP]/[V_C])
     KD - Array of distribution coefficients ([Conc_SP]eq/[Conc_MP]eq)

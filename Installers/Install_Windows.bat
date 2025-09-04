@@ -259,7 +259,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-REM Move executable with proper verification
+REM Move executable with verification
 echo.
 echo Moving executable to desktop...
 set MOVE_SUCCESS=0

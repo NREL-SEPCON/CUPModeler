@@ -6,8 +6,6 @@ from .CUP_MDMCM import CUP_MDMCM
 
 def MDMV2(Sf, KD, Vc, Ncup, Cfeed, Vinj, Vcm):
     """
-    This function calculates elution histories for a given semiprep column.
-
     Parameters:
     Sf: Semiprep column correlation factor
     KD: Vector of dissociation constants
@@ -54,7 +52,7 @@ def MDMV2(Sf, KD, Vc, Ncup, Cfeed, Vinj, Vcm):
 
             Tcut[index] = round(Vcm[index] / vmcup)
 
-        elif index % 2 == 1:  # 2nd, 4th, 6th switching CM to DM
+        elif index % 2 == 1:  # 2nd, 4th, 6th, etc. switching CM to DM
             Tstep2 = round(Vcm[index] / vscup)  # Calculate time step
             Tcut[index] = Tstep2 + Tcut[index - 1]
 
@@ -65,7 +63,7 @@ def MDMV2(Sf, KD, Vc, Ncup, Cfeed, Vinj, Vcm):
             Vspan = Vspan + Vdm1
 
             # Concatenate arrays
-            Vtot = np.append(Vtot, Vspan[1:])  # Skip the first point which would be duplicate
+            Vtot = np.append(Vtot, Vspan[1:])  # Skip the first point which would be duplicated
 
             # Ensure CoutDM has same number of components as Ctot
             if CoutDM.shape[0] != Ctot.shape[0]:
@@ -78,7 +76,7 @@ def MDMV2(Sf, KD, Vc, Ncup, Cfeed, Vinj, Vcm):
             Xtot = Xdm.copy()
             Ytot = Ydm.copy()
 
-        elif index % 2 == 0:  # 3rd, 5th, 7th switching DM to CM
+        elif index % 2 == 0:  # 3rd, 5th, 7th, etc. switching DM to CM
             Tstep3 = round(Vcm[index] / vmcup)  # Calculate timestep duration
             Tcut[index] = Tstep3 + Tcut[index - 1]
 
@@ -89,7 +87,7 @@ def MDMV2(Sf, KD, Vc, Ncup, Cfeed, Vinj, Vcm):
             Vspan = Vspan + Vcm1
 
             # Concatenate arrays
-            Vtot = np.append(Vtot, Vspan[1:])  # Skip the first point which would be duplicate
+            Vtot = np.append(Vtot, Vspan[1:])  # Skip the first point which would be duplicated
 
             # Ensure CoutCM has same number of components as Ctot
             if CoutCM.shape[0] != Ctot.shape[0]:

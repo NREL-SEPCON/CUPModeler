@@ -54,7 +54,7 @@ class ValidationMixin:
             self.set_entry_value(entry_widget, default_value)
             if value != "":  # Only show message if they actually typed something incomplete
                 self.show_notification(f"Incomplete entry replaced with {default_value}",
-                                       duration=1500, notif_type="info")
+                                       duration=2000, notif_type="info")
             return
 
         try:
@@ -63,7 +63,7 @@ class ValidationMixin:
             use_default = False
 
             # Check if we should use default value instead of trying to fix
-            # Use default for violations of core business rules
+            # Use default for violations of core rules
             if not allow_negative and num < 0:
                 use_default = True
 
@@ -101,7 +101,7 @@ class ValidationMixin:
                 self.show_notification(f"Value formatted from {original_value} to {final_value}",
                                        duration=1500, notif_type="info")
 
-            # Remove any error styling (works for both tk.Entry and ttk.Entry)
+            # Remove any error styling
             try:
                 entry_widget.configure(style="TEntry")
             except:
@@ -127,9 +127,9 @@ class ValidationMixin:
         # Set sensible defaults based on common field types
         if 'default_value' not in validation_params:
             if validation_params.get('integer_only'):
-                validation_params['default_value'] = '400'  # Good for efficiency
+                validation_params['default_value'] = '400'  # Good for N
             elif validation_params.get('max_val') == 1:
-                validation_params['default_value'] = '0.75'  # Good for ratios
+                validation_params['default_value'] = '0.75'  # Good for Sf
             else:
                 validation_params['default_value'] = '1'     # General default
 

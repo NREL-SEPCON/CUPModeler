@@ -4,9 +4,6 @@ import numpy as np
 @jit(nopython=True, parallel=True)
 def DualV2(KD, Vc, Sf, F, Vdm, Xcm, Ycm):
     """
-    Dual mode CCC by reversing the stationary phase while keeping the mobile phase.
-    Converted from MATLAB to Python.
-
     Parameters:
     KD: Distribution coefficient ([Conc_SP]eq/[Conc_MP]eq)
     Vc: Total column volume

@@ -4,9 +4,6 @@ import numpy as np
 @jit(nopython=True, parallel=True)
 def CupV6(Sf, KD, Vc, Ncup, Vcm, C0, Vinj):
     """
-    JIT-compiled version with parallel processing - Complete implementation
-    Expected speedup: 10-50x for large problems
-
     Parameters:
     Sf: Stationary factor (volume ratio of [V_SP]/[V_MP])
     KD: Distribution coefficient ([Conc_SP]eq/[Conc_MP]eq)

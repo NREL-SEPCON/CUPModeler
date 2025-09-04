@@ -5,9 +5,6 @@ import numpy as np
 @jit(nopython=True, parallel=True)
 def ECPC_V1(KD, Vc, Sf, Xcm, Ycm, extrusion_steps=None):
     """
-    ECPC - Extrusion mode of CCC by replacing mobile phase with SP.
-    Converted from MATLAB to Python.
-
     Parameters:
     KD: Distribution coefficient ([Conc_SP]eq/[Conc_MP]eq)
     Vc: Total column volume

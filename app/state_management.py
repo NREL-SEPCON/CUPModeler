@@ -273,7 +273,7 @@ class StateManagementMixin:
 
         if file_path:
             try:
-                # Create comprehensive state dictionary
+                # Create state dictionary
                 state = {
                     "version": "2.0",
                     "timestamp": datetime.now().isoformat(),
@@ -304,7 +304,7 @@ class StateManagementMixin:
                 except Exception as e:
                     state["application_settings"] = {}
 
-                # Save to file with custom encoder
+                # Save to file with encoder
                 with open(file_path, 'w') as f:
                     json.dump(state, f, indent=2, cls=NumpyEncoder)
 
@@ -479,7 +479,7 @@ class StateManagementMixin:
             'ylabel': self.classic_ax.get_ylabel(),
             'xlim': self.classic_ax.get_xlim(),
             'ylim': self.classic_ax.get_ylim(),
-            'grid': self.classic_grid_var.get(),  # Use the actual checkbox state
+            'grid': self.classic_grid_var.get(),  # Use checkbox state
             'facecolor': self.classic_ax.get_facecolor(),
             'legend_visible': has_legend(self.classic_ax),
             'legend_location': get_legend_location(self.classic_ax),
@@ -541,7 +541,7 @@ class StateManagementMixin:
             'constrained_layout': True
         }
 
-        # Pulse and fit plot configs with error handling
+        # Pulse and fit plot configs
         if hasattr(self, 'pulse_ax'):
             try:
                 plot_configs['pulse'] = {
@@ -583,7 +583,7 @@ class StateManagementMixin:
         return {
             "window_geometry": self.root.geometry(),
             "window_state": self.root.state(),
-            "application_version": "1.0",  # Your app version
+            "application_version": "1.0",
             "units_system": self.volume_time_var.get(),
             "last_simulation_run": {
                 "classic": hasattr(self, 'classic_results'),
@@ -1047,7 +1047,7 @@ class StateManagementMixin:
     def restore_application_settings(self, app_settings):
         """Restore application-level settings"""
 
-        # Restore window geometry if desired
+        # Restore window geometry
         geometry = app_settings.get('window_geometry')
         if geometry:
             try:
@@ -1057,7 +1057,7 @@ class StateManagementMixin:
 
     def export_data_common(self, mode, results, mode_specific_params=None):
         """Common export functionality for all simulation modes"""
-        # File selection with multiple format options
+        # File selection with format options
         filename = filedialog.asksaveasfilename(
             defaultextension=".xlsx",
             filetypes=[
@@ -1078,7 +1078,7 @@ class StateManagementMixin:
             vspan = results['vspan']
             cout = results['cout']
 
-            # Convert to time if needed
+            # Convert to time or volume
             if parameters.volume_time_mode.value == "Time":
                 x_values = vspan / parameters.flow_rate
                 x_label = 'Time (min)'
@@ -1182,8 +1182,8 @@ class StateManagementMixin:
                 combined_df = pd.concat([df_data, separator, df_params], axis=1)
                 combined_df.to_csv(filename, index=False)
 
-            # Export plot if Excel format
-            base_filename = filename.rsplit('.', 1)[0]  # Remove file extension
+            # Export PDF of plot regardless of data format
+            base_filename = filename.rsplit('.', 1)[0]  # Remove data file extension
             plot_filename = f"{base_filename}_plot.pdf"
             self.export_plot(mode, plot_filename)
 

@@ -421,7 +421,7 @@ class PlotRenderer:
         if config.show_peak_labels:
             self._add_multi_peak_labels(x_data, cout, compounds)
 
-        # Overlay experimental data if available
+        # Overlay experimental data if available and requested
         if gui_context:
             self._add_experimental_overlay(x_data, gui_context, max_conc)
 
@@ -514,7 +514,7 @@ class PlotRenderer:
                 self.ax.set_xlim(both_xlim)
                 gui_context.multi_pos_ax.set_xlim(both_xlim)
 
-                # Use the enhanced synchronization
+                # Synchronize plot x axes
                 if hasattr(gui_context, 'synchronize_multi_plot_layouts'):
                     gui_context.synchronize_multi_plot_layouts()
 
@@ -615,7 +615,7 @@ class PlotRenderer:
                 self.ax.text(column_volume_extruded_time, text_y_position,
                              sweep_start_label, ha="right", va="top", rotation=90)
 
-            # Extrusion start line (if applicable)
+            # Extrusion start line
             if sweep_time is not None:
                 self.ax.axvline(x=sweep_time, color='b',
                                 linestyle='-.', label="Extrusion Start")
@@ -792,7 +792,7 @@ class SimulationService:
         kd_array = np.array([c.kd for c in compounds])
         conc_array = np.array([c.concentration for c in compounds])
 
-        # Run appropriate simulation - these already return SimulationResults objects
+        # Run appropriate simulation - these return SimulationResults objects
         if sim_type == SimulationType.CLASSIC:
             result = self._run_classic(parameters, compounds, kd_array, conc_array)
         elif sim_type == SimulationType.EXTRUSION:
@@ -968,7 +968,7 @@ class SimulationService:
         # Get dual mode duration from extra_params
         dual_duration = extra_params.get('dual_duration', 10.0)
 
-        # Convert dual_duration to volume if in Time mode
+        # Convert dual_duration
         if params.volume_time_mode == VolumeTimeMode.TIME:
             vdm = dual_duration * params.flow_rate
         else:
@@ -1006,13 +1006,13 @@ class SimulationService:
         # Get switching times from extra_params
         switch_times = extra_params.get('switch_times', [10.0, 5.0])
 
-        # Convert switch times to volumes if in Time mode
+        # Convert switch times
         if params.volume_time_mode == VolumeTimeMode.TIME:
             switch_volumes = [t * params.flow_rate for t in switch_times]
         else:
             switch_volumes = switch_times
 
-        # Adjust the main elution volume based on injection volume inclusion
+        # Adjust the main elution volume
         main_elution_volume = params.get_vcm()
 
         # Combine the main elution volume (vcm) with the switch volumes
@@ -1099,14 +1099,14 @@ class PlotHandlersMixin:
 
     def force_consistent_fonts(self):
         """Force font sizes to be consistent regardless of plot content"""
-        # List all your actual axes attributes
+        # List all axes attributes
         axes_list = [
             getattr(self, 'classic_ax', None),
             getattr(self, 'dual_ax', None),
             getattr(self, 'extrusion_ax', None),
             getattr(self, 'multi_ax', None),
             getattr(self, 'pulse_ax', None)
-            # Add any other axes you have
+            # Add other axes?
         ]
 
         for ax in axes_list:
@@ -1117,7 +1117,7 @@ class PlotHandlersMixin:
 
     def plot_classic(self):
         """Plot classic elution model using enhanced PlotRenderer"""
-        self.classic_ax.clear()  # Keep this for safety
+        self.classic_ax.clear()
 
         try:
             parameters = self._extract_parameters_from_gui()
@@ -1153,7 +1153,7 @@ class PlotHandlersMixin:
 
     def plot_extrusion(self):
         """Plot elution-extrusion model using enhanced PlotRenderer"""
-        self.extrusion_ax.clear()  # Keep this for safety
+        self.extrusion_ax.clear()
 
         try:
             parameters = self._extract_parameters_from_gui()
@@ -1198,7 +1198,7 @@ class PlotHandlersMixin:
 
     def plot_dual(self):
         """Plot dual mode elution model using enhanced PlotRenderer"""
-        self.dual_ax.clear()  # Keep this for safety
+        self.dual_ax.clear()
 
         try:
             parameters = self._extract_parameters_from_gui()
@@ -1287,7 +1287,7 @@ class PlotHandlersMixin:
                 show_line_labels=getattr(self, 'multi_lines_labels_var', None) and self.multi_lines_labels_var.get()
             )
 
-            # Use PlotRenderer with the updated _render_multi method
+            # Use PlotRenderer with updated _render_multi method
             renderer = PlotRenderer(self.multi_ax, self.multi_canvas, self.multi_fig)
             renderer.render_simulation(results, config, gui_context=self)
 
@@ -1388,7 +1388,7 @@ class PlotHandlersMixin:
                 # Determine file extension
                 extension = filename.lower().split('.')[-1]
                 if extension in ['xls', 'xlsx']:
-                    # Excel file handling with robust numeric conversion
+                    # Excel file handling
                     try:
                         # Try reading without headers first
                         df = pd.read_excel(filename, header=None)
@@ -1420,7 +1420,7 @@ class PlotHandlersMixin:
                         col_data = numeric_df[col].abs()
                         max_val = col_data.max()
                         non_zero_count = (col_data > 1e-10).sum()
-                        # More lenient: keep if has ANY significant values
+                        # More lenient: keep if has any significant values
                         if -1e-10 < max_val > 1e-10 and non_zero_count >= 1:
                             columns_to_keep.append(col)
 
@@ -1430,9 +1430,9 @@ class PlotHandlersMixin:
                         messagebox.showerror("Import Error", f"Need at least 2 columns with numeric data. Found {len(columns_to_keep)} usable columns.")
                         return
 
-                    # Filter to only useful columns and round to 3 decimal places
+                    # Filter to only useful columns and round to 2 decimal places
                     filtered_df = numeric_df[columns_to_keep]
-                    filtered_df = filtered_df.round(3)
+                    filtered_df = filtered_df.round(2)
 
                     # Transpose to match format expected by column selection
                     imported_data = filtered_df.values.T
@@ -1461,7 +1461,7 @@ class PlotHandlersMixin:
                 else:
                     # Text/CSV file handling
                     try:
-                        # Read the file content
+                        # Read file content
                         with open(filename, 'r', encoding='utf-8') as f:
                             content = f.read()
 
@@ -1477,7 +1477,7 @@ class PlotHandlersMixin:
                                 for delimiter in ['\t', ',']:
                                     parts = line.split(delimiter)
                                     if len(parts) >= 2:
-                                        # Check if ALL non-empty parts are numeric
+                                        # Check if all non-empty parts are numeric
                                         all_numeric = True
                                         non_empty_count = 0
                                         for part in parts:
@@ -1752,11 +1752,11 @@ class PlotHandlersMixin:
                 messagebox.showwarning("No Peaks found")
                 return
 
-            # Find peaks - convert to standard Python types to avoid numpy indexing issues
+            # Find peaks - convert to standard types to avoid numpy indexing issues
             peaks, properties = find_peaks(Y_smooth.astype(np.float64),
                                            prominence=prominence_value)
 
-            # Convert peaks to standard Python list of integers
+            # Convert peaks to list of integers
             peaks = [int(p) for p in peaks if 0 <= int(p) < len(X)]
 
             if len(peaks) == 0:

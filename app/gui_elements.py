@@ -992,19 +992,19 @@ class GUIElementsMixin:
         self.root.bind(f"<{modifier}-n>", lambda e: self.clear_all_data())           # Ctrl+N: New/Clear
         self.root.bind(f"<{modifier}-s>", lambda e: self.save_state())               # Ctrl+S: Save
         self.root.bind(f"<{modifier}-o>", lambda e: self.load_state())               # Ctrl+O: Open/Load
-        self.root.bind(f"<{modifier}-i>", lambda e: self.show_shortcuts_help())       # Ctrl+I: Help
+        self.root.bind(f"<{modifier}-i>", lambda e: self.show_shortcuts_help())      # Ctrl+I: Help
 
         # Simulation shortcuts
         self.root.bind(f"<{modifier}-r>", lambda e: self.run_current_simulation())   # Ctrl+R: Run current simulation
-        self.root.bind(f"<{modifier}-e>", lambda e: self.refresh_all_plots())        # F9: Update run simulations
+        self.root.bind(f"<{modifier}-e>", lambda e: self.refresh_all_plots())        # Ctrl+E: Update run simulations
 
         # Tab navigation
         self.root.bind(f"<{modifier}-Key-1>", lambda e: self.switch_to_tab(0) or "break")          # Ctrl+1: Classic
         self.root.bind(f"<{modifier}-Key-2>", lambda e: self.switch_to_tab(1) or "break")          # Ctrl+2: Extrusion
         self.root.bind(f"<{modifier}-Key-3>", lambda e: self.switch_to_tab(2) or "break")          # Ctrl+3: Dual Mode
         self.root.bind(f"<{modifier}-Key-4>", lambda e: self.switch_to_tab(3) or "break")          # Ctrl+4: Multiple Dual
-        self.root.bind(f"<{modifier}-Key-5>", lambda e: self.switch_to_tab(4) or "break")          # Ctrl+4: Pulse Test
-        self.root.bind(f"<{modifier}-Key-6>", lambda e: self.switch_to_tab(5) or "break")          # Ctrl+4: Trace Fitting
+        self.root.bind(f"<{modifier}-Key-5>", lambda e: self.switch_to_tab(4) or "break")          # Ctrl+5: Pulse Test
+        self.root.bind(f"<{modifier}-Key-6>", lambda e: self.switch_to_tab(5) or "break")          # Ctrl+6: Trace Fitting
 
         # Data entry shortcuts
         self.root.bind(f"<{modifier}-equal>", lambda e: self.add_compound())         # Ctrl+=: Add compound
