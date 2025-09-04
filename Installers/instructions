@@ -1,0 +1,42 @@
+You do not need to install the program to use it, you can run the main.py file in the root directory of this repo like any other python file. However, if you want an executable that is easy to fire up by just double clicking on it like any other program on your computer, you will see files in this directory that will help do this.
+
+There are "Install" files in this folder. When run, these files will prompt you to either let them automatically run and generate the .exe/.app or interactively go through each step of the installation.
+
+The other files in this folder include the icons and the file you are reading right now.
+
+
+
+
+
+If you are installing on a Windows computer...
+
+    1) Double click the .bat file and follow the instructions
+
+    2) Place the .exe file created on your desktop wherever you want
+
+
+
+
+
+If you are installing on a Mac or Linux computer...
+
+    1) Open a terminal, navigate to the Installers directory, and chmod the file by running:
+    
+            chmod +x Auto_Install_MacLinux.sh
+    
+    If the terminal comes back telling you that you need permissions, run this instead:
+    
+            sudo chmod +x Auto_Install_MacLinux.sh
+    
+    2) Go back to your file navigator and double click the .sh file or stay in the terminal and run:
+
+            ./Install_MacLinux.sh
+    
+    Follow the instructions in your terminal.
+    
+    3) Place the application created on your desktop wherever you want
+
+
+If you have followed these instructions, you should have an executable version of the app that is tailored to your computer.
+
+Have fun, and simulate responsibly!

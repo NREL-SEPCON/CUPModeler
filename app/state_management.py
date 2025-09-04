@@ -1183,8 +1183,9 @@ class StateManagementMixin:
                 combined_df.to_csv(filename, index=False)
 
             # Export plot if Excel format
-            if file_ext == 'xlsx':
-                self.export_plot(mode, filename.replace('.xlsx', '_plot.pdf'))
+            base_filename = filename.rsplit('.', 1)[0]  # Remove file extension
+            plot_filename = f"{base_filename}_plot.pdf"
+            self.export_plot(mode, plot_filename)
 
             self.show_notification(f"{mode.title()} data exported successfully!", duration=2000, notif_type="success")
 

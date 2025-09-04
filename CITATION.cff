@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use this software in academic work, please cite the following article."
+title: "Implementation and Evaluation of Multi-Dual Mode Counter-Current Chromatography in the CUP Modeler Software"
+version: 1.0.0
+authors:
+  - family-names: Alherech
+    given-names: Manar
+  - family-names: Beckham
+    given-names: Gregg T.
+  - family-names: Choi
+    given-names: Hoon
+date-released: "2025-08-05"
+doi: "10.1016/j.chroma.2025.466265"
+repository-code: "https://github.com/NREL-SEPCON/CUPModeler"
